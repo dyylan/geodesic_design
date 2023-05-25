@@ -95,9 +95,7 @@ class Optimizer:
         fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs, step_size=2)
 
         if fidelity_new_phi > self.precision:
-#             print(f"\n[{step_count[0]}/{step_count[1]}] Solution found!")
             print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
-#         elif fidelity_new_phi - ((1-precision)/100) > fidelity_phi:
         elif fidelity_new_phi > fidelity_phi:
             print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ", end="\r")
         else:
