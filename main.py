@@ -4,7 +4,7 @@ from gnd import basis, optimize, data
 from configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight4ParityZConfig
 
 
-config = ToffoliConfig()
+config = Weight4ParityZConfig()
 
 if __name__ == "__main__":
     b = basis.PauliBasis(config.nqubits)

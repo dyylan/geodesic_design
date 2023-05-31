@@ -60,6 +60,7 @@ class Optimizer:
             self.fidelities.append(fidelity)
             self.step_sizes.append(step_size)
             self.steps.append(step)
+        print("")
         if self.fidelities[-1] >= self.precision:
             return True
         else:
