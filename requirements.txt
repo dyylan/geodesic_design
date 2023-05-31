@@ -1,0 +1,5 @@
+scipy==1.10.1
+pandas==2.0.1
+matplotlib==3.7.1
+jax==0.4.8
+jaxlib==0.4.7
