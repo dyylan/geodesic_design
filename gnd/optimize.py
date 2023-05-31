@@ -1,7 +1,11 @@
+from jax.config import config
 import numpy as np
-import cvxpy as cp
-import scipy.linalg as spla
-import pennylane as qml
+cPRECISION = np.complex64
+config.update("jax_enable_x64", cPRECISION.__name__ == 'complex128')
+import scipy.optimize as spo
+
+import jax
+import jax.numpy as jnp
 
 from .lie import Hamiltonian
 from .utils import golden_section_search
@@ -49,13 +53,20 @@ class Optimizer:
         self.fidelities = [Hamiltonian(basis, init_parameters).fidelity(target_unitary)]
         self.step_sizes = [0]
         self.steps = [0]
+
+        def compute_matrix(params):
+            A = jnp.tensordot(params, self.basis.basis, axes=[[-1], [0]])
+            return jax.scipy.linalg.expm(1j * A)
+
+        self.jac = jax.jacobian(compute_matrix, argnums=0, holomorphic=True)
+        self.compute_matrix = jax.jit(compute_matrix)
         self.is_succesful = self.optimize()
 
     def optimize(self):
         step = 0
         while (self.fidelities[-1] < self.precision) and (step < self.max_steps):
             step += 1
-            new_phi_ham, fidelity, step_size = self.update_step(step_count=(step,self.max_steps))
+            new_phi_ham, fidelity, step_size = self.update_step(step_count=(step, self.max_steps))
             self.parameters.append(new_phi_ham.parameters)
             self.fidelities.append(fidelity)
             self.step_sizes.append(step_size)
@@ -66,7 +77,7 @@ class Optimizer:
         else:
             return False
 
-    def update_step(self, step_count=(None,None)):
+    def update_step(self, step_count=(None, None)):
         # Step 0: find the unitary from phi
         phi = self.parameters[-1]
         phi_ham = Hamiltonian(self.basis, phi)
@@ -76,15 +87,16 @@ class Optimizer:
         
         # Step 2: find the Omegas
         projected_indices = self.basis.two_body_projection_indices()
-
-        su = qml.SpecialUnitary(phi, [i for i in range(self.n_qubits)])
-        omegas = 1.j * su.get_one_parameter_generators(interface="jax")
-
+        phi_c = phi.astype(cPRECISION)
+        dU = self.jac(phi_c)
+        U_dagger = self.compute_matrix(-phi_c)
+        omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1])
+        # After contracting, move the parameter derivative axis to the first position
         omega_phis = np.array([projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
         coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, projected_indices)
-        
+        # print(coeffs)
         if coeffs is None:
             print(f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                     ", end="\r")
             new_phi_ham = Hamiltonian(self.basis, self.basis.two_body_projection(2*np.random.rand(len(self.basis.basis)) - 1))
@@ -114,15 +126,12 @@ class Optimizer:
     @staticmethod
     def linear_comb_projected_coeffs(combination_vectors, target_vector, projected_indices):
         delete_indices = np.where(projected_indices == 0)[0]
-        combination_vectors_projected = np.delete(combination_vectors, delete_indices, axis=0)
-        x = cp.Variable(combination_vectors_projected.shape[0])
-        cost = cp.sum_squares(combination_vectors.T @ x - target_vector)
-        prob = cp.Problem(cp.Minimize(cost))
-        prob.solve()
-        if x.value is None:
-            return x.value
+        res = spo.least_squares(lambda x: combination_vectors.T @ x - target_vector, x0=np.zeros_like(target_vector),
+                                 method='lm')
+        if not res.success:
+            return None
         else:
-            coeffs = np.insert(x.value, delete_indices, values=0, axis=0)
+            coeffs = np.insert(res.x, delete_indices, values=0, axis=0)
         return coeffs
 
     def _new_phi_golden_section_search(self, phi_ham, coeffs, step_size):

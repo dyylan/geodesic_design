@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.linalg as spla
 
 invphi = (np.sqrt(5) - 1) / 2  # 1 / phi
 invphi2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
