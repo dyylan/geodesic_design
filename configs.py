@@ -19,12 +19,13 @@ class ToffoliConfig:
                                  [0,0,0,0,0,0,1,0]])
         self.precision = 0.999
         self.max_steps = 1000
+        self.seed = 1
 
     def __str__(self):
         return "toffoli"
 
     def __dir__(self):
-        return ["precision", "max_steps"]
+        return ["precision", "max_steps", "seed"]
     
 
 class QFTqubitConfig:
@@ -34,12 +35,13 @@ class QFTqubitConfig:
         self.unitary = (1/np.sqrt(2**self.nqubits)) * np.array([[w**(i*j) for i in range(2**self.nqubits)] for j in range(2**self.nqubits)])
         self.precision = 0.999
         self.max_steps = 1000
+        self.seed = 1
 
     def __str__(self):
         return f"QFT_{self.nqubits}_qubits"
 
     def __dir__(self):
-        return ["precision", "max_steps"]
+        return ["precision", "max_steps", "seed"]
     
 
 class Weight2ParityZConfig:
@@ -48,12 +50,13 @@ class Weight2ParityZConfig:
         self.unitary = (multikron([I,I,I]) + multikron([Z,Z,I]) + multikron([I,I,X]) - multikron([Z,Z,X]))/2
         self.precision = 0.999
         self.max_steps = 1000
+        self.seed = 1
 
     def __str__(self):
         return f"weight_2_parity_check_Z"
 
     def __dir__(self):
-        return ["precision", "max_steps"]
+        return ["precision", "max_steps", "seed"]
 
 
 class Weight4ParityZConfig:
@@ -62,9 +65,10 @@ class Weight4ParityZConfig:
         self.unitary = (multikron([I,I,I,I,I]) + multikron([Z,Z,Z,Z,I]) + multikron([I,I,I,I,X]) - multikron([Z,Z,Z,Z,X]))/2
         self.precision = 0.999
         self.max_steps = 1000
+        self.seed = 1
 
     def __str__(self):
         return f"weight_4_parity_check_Z"
 
     def __dir__(self):
-        return ["precision", "max_steps"]
+        return ["precision", "max_steps", "seed"]
