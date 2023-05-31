@@ -26,7 +26,29 @@ class ToffoliConfig:
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
-    
+
+
+class FredkinConfig:
+    def __init__(self):
+        self.nqubits = 3
+        self.unitary = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                                 [0, 1, 0, 0, 0, 0, 0, 0],
+                                 [0, 0, 1, 0, 0, 0, 0, 0],
+                                 [0, 0, 0, 1, 0, 0, 0, 0],
+                                 [0, 0, 0, 0, 1, 0, 0, 0],
+                                 [0, 0, 0, 0, 0, 0, 1, 0],
+                                 [0, 0, 0, 0, 0, 1, 0, 0],
+                                 [0, 0, 0, 0, 0, 0, 0, 1]])
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.seed = 1
+
+    def __str__(self):
+        return "fredkin"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "seed"]
+
 
 class QFTqubitConfig:
     def __init__(self):
