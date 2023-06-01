@@ -94,3 +94,18 @@ class Weight4ParityZConfig:
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
+    
+
+class Weight4ParityXConfig:
+    def __init__(self):
+        self.nqubits = 5
+        self.unitary = (multikron([I,I,I,I,I]) + multikron([X,X,X,X,I]) + multikron([I,I,I,I,X]) - multikron([X,X,X,X,X]))/2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.seed = 1
+
+    def __str__(self):
+        return f"weight_4_parity_check_Z"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "seed"]
