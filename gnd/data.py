@@ -68,6 +68,10 @@ class OptimizationData:
         concatdfs.to_csv(filepath, index=False)
         return dfs
 
+    def exists(self):
+        filepath = self._generate_filepath()
+        return os.path.exists(filepath)
+
     def plot_parameters(self, basis, sample, title=False, figsize=[14,6]):
         labels = ["".join(map(str, l)) for l in basis.labels]
         fig, ax = plt.subplots(figsize=figsize)
