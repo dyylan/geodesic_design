@@ -82,7 +82,24 @@ def loss_fn(params: jnp.array, target: jnp.array, basis: jnp.array) -> float:
 
 
 def optimizer_unitary(target: jnp.array, basis: jnp.array, parameters: jnp.array,
-                      max_steps: int = 1000, learning_rate: float = 1e-1, precision: float = 0.999, optimizer="gd"):
+                      max_steps: int = 1000, learning_rate: float = 1e-1, precision: float = 0.999,
+                      optimizer="gd") -> dict:
+    """
+
+    Args:
+        target: ndarray of size (n,n) corresponding the target unitary
+        basis: ndarray of size (d,n,n) corresponding to the d elements in the basis of (n,n) matrices
+        parameters: ndarray of size (d) corresponding the parameters in the (projected) basis
+        max_steps: integer corresponding to the maximum number of optimization steps
+        learning_rate: float corresponding to the learning rate of the optimizer
+        precision: float corresponding to the final fidelity precision we are interested in
+        optimizer: string indicating which optimizer to use. Possible values are "gd" and "adam"
+
+    Returns:
+        dictionary with fields 'fidelities' and 'parameters' containing the fidelities and parameters at each
+        optimization step.
+
+    """
     assert 0.0 <= precision <= 1., f"`precision must be between 0 and 1, received {precision}"
     grad_fn = jax.value_and_grad(loss_fn, argnums=0)
     loss, _ = grad_fn(parameters, target, basis)
