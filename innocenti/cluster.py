@@ -4,7 +4,7 @@ from src.model import QubitNetworkGateModel
 from src.analytical_conditions import commuting_generator
 from src.QubitNetwork import pauli_product
 
-from data_saver import save_log
+from innocenti.src.data_saver import save_log
 
 import qutip
 import sympy

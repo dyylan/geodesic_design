@@ -19,6 +19,8 @@ if __name__ == "__main__":
         config = Weight2ParityZConfig()
     elif args.gate == 'w4pz':
         config = Weight4ParityZConfig()
+    elif args.gate == 'w4px':
+        config = Weight4ParityZConfig()
     else:
         raise NotImplementedError(f"{args.gate} not implemented")
 
