@@ -1,8 +1,8 @@
-from qubit_network.Optimizer import Optimizer
-from qubit_network.model import QubitNetworkGateModel
+from src.Optimizer import Optimizer
+from src.model import QubitNetworkGateModel
 
-from qubit_network.analytical_conditions import commuting_generator
-from qubit_network.QubitNetwork import pauli_product
+from src.analytical_conditions import commuting_generator
+from src.QubitNetwork import pauli_product
 
 from data_saver import save_log
 

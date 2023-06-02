@@ -1,5 +1,5 @@
 import numpy as np
-from gnd import basis, optimize, data
+from src import basis, optimize, data
 import argparse
 from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig
 

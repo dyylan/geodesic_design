@@ -1,5 +1,6 @@
 import numpy as np
-from src.utils import multikron
+
+from gnd.utils import multikron
 
 I = np.array([[1,0],[0,1]])
 X = np.array([[0,1],[1,0]])

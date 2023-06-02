@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src import basis, optimize, data
+from gnd import basis, optimize, data
 
 from configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight4ParityZConfig
 
