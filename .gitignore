@@ -1,3 +1,6 @@
+*.icloud
+*.zip
+
 *.bundle.*
 lib/
 node_modules/
