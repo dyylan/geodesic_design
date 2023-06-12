@@ -54,6 +54,11 @@ class OptimizationData:
         index = self._find_sample(sample)
         return self.optimizers[index]["step_sizes"]
     
+    def max_fidelity(self, sample):
+        self._is_optimizer_loaded()
+        index = self._find_sample(sample)
+        return max(self.optimizers[index]["fidelities"])
+
     def add_optimizer(self, optimizer):
         self.samples += 1
         self.optimizers.append(self._construct_data_dict(optimizer))
@@ -112,7 +117,7 @@ class OptimizationData:
             self.optimizers.append(df.to_dict("list"))
         return self.optimizers
     
-    def _generate_filepath(self, name="optimization_data", folder="data", extension="csv", float_precision=4):
+    def _generate_filepath(self, name="optimization_data", extension="csv", float_precision=4):
         config_attributes = dir(self.config)
         conf_folder = ""
         for attr in config_attributes:
@@ -125,7 +130,7 @@ class OptimizationData:
                 a_str = f"m{abs(a):.{float_precision}f}" if str(a)[0] == "-" else f"{a:.{float_precision}f}"
                 conf_folder += "_" + attr + "=" + a_str
         conf_folder = conf_folder[1:]
-        root_folder = f"{folder}/{str(self.config)}/{conf_folder}"
+        root_folder = f"{self.folder}/{str(self.config)}/{conf_folder}"
         directory = os.getcwd() + "/" + root_folder
         if not os.path.exists(directory):
             os.makedirs(directory)
