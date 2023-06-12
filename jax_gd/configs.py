@@ -105,7 +105,7 @@ class Weight4ParityXConfig:
         self.seed = 1
 
     def __str__(self):
-        return f"weight_4_parity_check_Z"
+        return f"weight_4_parity_check_X"
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
