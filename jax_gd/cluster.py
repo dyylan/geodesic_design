@@ -12,12 +12,13 @@ if __name__ == "__main__":
 
     parser.add_argument('--instance', default=1)
     parser.add_argument('--gate', default='toffoli')
+    parser.add_argument('--steps', default=1000)
     args = parser.parse_args()
-    gate = args.gate
-    max_steps = 1000
     precision = 0.999
+    max_steps = int(args.steps)
     seed = int(args.instance) * 2 ** 8
     gate = args.gate
+
     if gate == 'toffoli':
         config = ToffoliConfig()
     elif gate == 'qtf':

@@ -4,7 +4,10 @@ from src.model import QubitNetworkGateModel
 from src.analytical_conditions import commuting_generator
 from src.QubitNetwork import pauli_product
 
-from innocenti.src.data_saver import save_log
+from src.data_saver import save_log
+
+from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
+    Weight4ParityXConfig
 
 import qutip
 import sympy
@@ -23,6 +26,7 @@ logging.basicConfig(
     ]
 )
 
+
 def J(*args):
     return sympy.Symbol('J' + ''.join(str(arg) for arg in args))
 
@@ -33,11 +37,12 @@ def pauli(*args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
-    parser.add_argument('--instance', default=1)
-    parser.add_argument('--gate', default='toffoli')
+    parser.add_argument('--instance', default=0)
+    parser.add_argument('--gate', default='qft')
+    parser.add_argument('--steps', default=1000)
     args = parser.parse_args()
     precision = 0.999
-    max_steps = 1000
+    max_steps = int(args.steps)
     seed = int(args.instance) * 2 ** 8
     gate = args.gate
 
@@ -51,18 +56,28 @@ if __name__ == "__main__":
                 pauli(0, 0, 0) + pauli(0, 0, 1))
         generator += J(2, 2, 0) * (pauli(1, 1, 0) + pauli(2, 2, 0))
         generator += J(3, 3, 0) * pauli(3, 3, 0)
-        target_gate = qutip.toffoli()
+        target_gate = qutip.Qobj(ToffoliConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
     elif gate == 'fredkin':
-        generator = commuting_generator(qutip.fredkin(), interactions='diagonal')
-        target_gate = qutip.fredkin()
+        target_gate = qutip.Qobj(FredkinConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        generator = commuting_generator(target_gate, interactions='diagonal')
+    elif gate == 'qft':
+        target_gate = qutip.Qobj(QFTqubitConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        generator = commuting_generator(target_gate, interactions='diagonal')
+    elif gate == 'w2pz':
+        target_gate = qutip.Qobj(Weight2ParityZConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8), isunitary=True)
+        generator = commuting_generator(target_gate, interactions='diagonal')
+    elif gate == 'w4pz':
+        target_gate = qutip.Qobj(Weight4ParityZConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
+                                 isunitary=True)
+        generator = commuting_generator(target_gate, interactions='diagonal')
+    elif gate == 'w4px':
+        target_gate = qutip.Qobj(Weight4ParityXConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
+                                 isunitary=True)
+        generator = commuting_generator(target_gate, interactions='diagonal')
     else:
         raise NotImplementedError(f"{gate} not implemented")
 
     print(f"Running {gate} with seed {seed}")
-
-    # import pickle
-    # with open('file.c', 'rb') as file:
-    #     log = pickle.load(file)
 
     save_path = f'./data/{gate}/max_steps={max_steps}_precision={precision:1.4f}_seed={seed}/'
 

@@ -14,6 +14,13 @@ import theano
 import theano.tensor as T
 
 
+def multikron(matrices):
+    product = matrices[0]
+    for mat in matrices[1:]:
+        product = np.kron(product, mat)
+    return product
+
+
 def complexrandn(dim1, dim2):
     """Generates an array of pseudorandom, normally chosen, complex numbers."""
     big_matrix = np.random.randn(dim1, dim2, 2)
