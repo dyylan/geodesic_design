@@ -75,7 +75,7 @@ class Weight2ParityZConfig:
         self.seed = 1
 
     def __str__(self):
-        return f"weight_2_parity_check_Z"
+        return f"w2pz"
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
@@ -90,7 +90,7 @@ class Weight4ParityZConfig:
         self.seed = 1
 
     def __str__(self):
-        return f"weight_4_parity_check_Z"
+        return f"w4pz"
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
@@ -105,7 +105,7 @@ class Weight4ParityXConfig:
         self.seed = 1
 
     def __str__(self):
-        return f"weight_4_parity_check_X"
+        return f"w4px"
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
