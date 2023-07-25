@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 
 from .lie import Hamiltonian
-from .utils import golden_section_search
+from .utils import golden_section_search, commuting_ansatz, prepare_random_initial_parameters, prepare_random_parameters
 
 
 class Optimizer:
@@ -41,21 +41,28 @@ class Optimizer:
     max_steps : int
     precision : float
     """
-    def __init__(self, target_unitary, basis, init_parameters, max_steps=1000, precision=0.999):
+    def __init__(self, target_unitary, basis, init_parameters=None, max_steps=1000, precision=0.999, max_step_size=2):
         self.target_unitary = target_unitary
         self.basis = basis
         self.n_qubits = basis.n
         self.init_parameters = init_parameters
         self.max_steps = max_steps
         self.precision = precision
+        self.max_step_size = max_step_size
 
-        self.parameters = [init_parameters]
-        self.fidelities = [Hamiltonian(basis, init_parameters).fidelity(target_unitary)]
+        self.projected_indices = self.basis.two_body_projection_indices()
+        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, basis, self.projected_indices)
+
+        if init_parameters is None:
+            self.init_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
+        self.parameters = [self.init_parameters]
+        self.fidelities = [Hamiltonian(basis, self.init_parameters).fidelity(target_unitary)]
         self.step_sizes = [0]
         self.steps = [0]
 
         def compute_matrix(params):
-            A = jnp.tensordot(params, self.basis.basis, axes=[[-1], [0]])
+            commuting_params = jnp.matmul(self.commuting_ansatz_matrix, params)
+            A = jnp.tensordot(commuting_params, self.basis.basis, axes=[[-1], [0]])
             return jax.scipy.linalg.expm(1j * A)
 
         self.jac = jax.jacobian(compute_matrix, argnums=0, holomorphic=True)
@@ -81,31 +88,32 @@ class Optimizer:
         # Step 0: find the unitary from phi
         phi = self.parameters[-1]
         phi_ham = Hamiltonian(self.basis, phi)
-        
+        free_params = np.multiply(self.free_indices, self.parameters[-1])
+
         # Step 1: find the geodesic between phi_U and target_V
         gamma = phi_ham.geodesic_hamiltonian(self.target_unitary)
-        
-        # Step 2: find the Omegas
-        projected_indices = self.basis.two_body_projection_indices()
-        phi_c = phi.astype(cPRECISION)
-        dU = self.jac(phi_c)
-        U_dagger = self.compute_matrix(-phi_c)
+    
+        free_params_c = free_params.astype(cPRECISION)
+        dU = self.jac(free_params_c)
+        U_dagger = self.compute_matrix(-free_params_c)
         omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1])
+
         # After contracting, move the parameter derivative axis to the first position
-        omega_phis = np.array([projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in enumerate(omegas)])
+        omega_phis = np.array([self.projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
-        coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, projected_indices)
-        # print(coeffs)
+        coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices, self.commuting_ansatz_matrix)
+
         if coeffs is None:
-            print(f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                     ", end="\r")
-            new_phi_ham = Hamiltonian(self.basis, self.basis.two_body_projection(2*np.random.rand(len(self.basis.basis)) - 1))
+            print(f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                    ", end="\r")
+            random_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
+            new_phi_ham = Hamiltonian(self.basis, random_parameters)
             fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
             # step_size = spla.norm(new_phi_ham.parameters - phi)
             return new_phi_ham, fidelity_new_phi, 0
 
         # Step 4: Apply a small push in the right direction to give a new phi
-        fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs, step_size=2)
+        fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs, step_size=self.max_step_size)
 
         if fidelity_new_phi > self.precision:
             print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
@@ -113,8 +121,7 @@ class Optimizer:
             print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ", end="\r")
         else:
             print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_phi}] Omega geodesic gave a negative fidelity update for this step. Moving phi away...    ", end="\r")
-            c = 2*np.random.rand(len(self.basis.basis)) - 1
-            proj_c = np.multiply(projected_indices, c)
+            proj_c = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
 
             # Use the Gram-Schmidt procedure to generate a perpendicular vector to the previous coefficients.
             proj_c = proj_c - (((proj_c @ coeffs)/(coeffs @ coeffs)) * coeffs)
@@ -124,14 +131,18 @@ class Optimizer:
         return new_phi_ham, fidelity_new_phi, step_size
 
     @staticmethod
-    def linear_comb_projected_coeffs(combination_vectors, target_vector, projected_indices):
-        delete_indices = np.where(projected_indices == 0)[0]
-        res = spo.least_squares(lambda x: combination_vectors.T @ x - target_vector, x0=np.zeros_like(target_vector),
+    def linear_comb_projected_coeffs(combination_vectors, target_vector, projected_indices, commuting_ansatz):
+        num_params = sum(projected_indices)
+        expander_matrix = np.identity(num_params)
+        for i, index in enumerate(projected_indices):
+            if not index:
+                expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
+        res = spo.least_squares(lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector, x0=np.zeros(num_params),
                                  method='lm')
         if not res.success:
             return None
         else:
-            coeffs = np.insert(res.x, delete_indices, values=0, axis=0)
+            coeffs = commuting_ansatz @ expander_matrix @ res.x
         return coeffs
 
     def _new_phi_golden_section_search(self, phi_ham, coeffs, step_size):
@@ -157,6 +168,6 @@ class Optimizer:
 
     def _construct_fidelity_function(self, phi_ham, coeffs):
         def fidelity_f(epsilon):
-            phi_h = Hamiltonian(self.basis, phi_ham.parameters+(epsilon * coeffs))
+            phi_h = Hamiltonian(self.basis, phi_ham.parameters + (epsilon * coeffs))
             return phi_h.fidelity(self.target_unitary)
         return fidelity_f
