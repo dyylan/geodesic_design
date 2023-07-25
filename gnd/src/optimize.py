@@ -11,6 +11,19 @@ from .lie import Hamiltonian
 from .utils import golden_section_search, commuting_ansatz, prepare_random_initial_parameters, prepare_random_parameters
 
 
+# Roeland: One thing I recently learned is that you want to make sure that jitted functions are pure functions that
+# do not rely on stateful objects, i.e. self.object. Jax will think that these objects are dynamical and slow down.
+# You want to return a helper function that feeds in all the static objects and return a function that only depends
+# on the non-static inputs.
+def get_compute_matrix_fn(commuting_ansatz_matrix, basis):
+    def compute_matrix(params):
+        commuting_params = jnp.matmul(commuting_ansatz_matrix, params)
+        A = jnp.tensordot(commuting_params, basis, axes=[[-1], [0]])
+        return jax.scipy.linalg.expm(1j * A)
+
+    return compute_matrix
+
+
 class Optimizer:
     """
     Handling the optimization of the phi parameters.
@@ -59,14 +72,10 @@ class Optimizer:
         self.fidelities = [Hamiltonian(basis, self.init_parameters).fidelity(target_unitary)]
         self.step_sizes = [0]
         self.steps = [0]
-
-        def compute_matrix(params):
-            commuting_params = jnp.matmul(self.commuting_ansatz_matrix, params)
-            A = jnp.tensordot(commuting_params, self.basis.basis, axes=[[-1], [0]])
-            return jax.scipy.linalg.expm(1j * A)
-
-        self.jac = jax.jacobian(compute_matrix, argnums=0, holomorphic=True)
-        self.compute_matrix = jax.jit(compute_matrix)
+        compute_matrix_fn = get_compute_matrix_fn(commuting_ansatz_matrix=self.commuting_ansatz_matrix,
+                                                  basis=self.basis.basis)
+        self.jac = jax.jacobian(compute_matrix_fn, argnums=0, holomorphic=True)
+        self.compute_matrix = jax.jit(compute_matrix_fn)
         self.is_succesful = self.optimize()
 
     def optimize(self):
@@ -92,20 +101,25 @@ class Optimizer:
 
         # Step 1: find the geodesic between phi_U and target_V
         gamma = phi_ham.geodesic_hamiltonian(self.target_unitary)
-    
+
         free_params_c = free_params.astype(cPRECISION)
         dU = self.jac(free_params_c)
         U_dagger = self.compute_matrix(-free_params_c)
         omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1])
 
         # After contracting, move the parameter derivative axis to the first position
-        omega_phis = np.array([self.projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in enumerate(omegas)])
+        omega_phis = np.array(
+            [self.projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in
+             enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
-        coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices, self.commuting_ansatz_matrix)
+        coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices,
+                                                        self.commuting_ansatz_matrix)
 
         if coeffs is None:
-            print(f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                    ", end="\r")
+            print(
+                f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                    ",
+                end="\r")
             random_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
             new_phi_ham = Hamiltonian(self.basis, random_parameters)
             fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
@@ -113,21 +127,27 @@ class Optimizer:
             return new_phi_ham, fidelity_new_phi, 0
 
         # Step 4: Apply a small push in the right direction to give a new phi
-        fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs, step_size=self.max_step_size)
+        fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs,
+                                                                                                     step_size=self.max_step_size)
 
         if fidelity_new_phi > self.precision:
-            print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
+            print(
+                f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
         elif fidelity_new_phi > fidelity_phi:
-            print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ", end="\r")
+            print(
+                f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ",
+                end="\r")
         else:
-            print(f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_phi}] Omega geodesic gave a negative fidelity update for this step. Moving phi away...    ", end="\r")
+            print(
+                f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_phi}] Omega geodesic gave a negative fidelity update for this step. Moving phi away...    ",
+                end="\r")
             proj_c = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
 
             # Use the Gram-Schmidt procedure to generate a perpendicular vector to the previous coefficients.
-            proj_c = proj_c - (((proj_c @ coeffs)/(coeffs @ coeffs)) * coeffs)
+            proj_c = proj_c - (((proj_c @ coeffs) / (coeffs @ coeffs)) * coeffs)
 
             fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_full(phi_ham, proj_c, step_size=1)
-        
+
         return new_phi_ham, fidelity_new_phi, step_size
 
     @staticmethod
@@ -137,8 +157,10 @@ class Optimizer:
         for i, index in enumerate(projected_indices):
             if not index:
                 expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
-        res = spo.least_squares(lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector, x0=np.zeros(num_params),
-                                 method='lm')
+        res = spo.least_squares(
+            lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
+            x0=np.zeros(num_params),
+            method='lm')
         if not res.success:
             return None
         else:
@@ -164,10 +186,11 @@ class Optimizer:
             sign = +1
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
         fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
-        return fidelity_phi, fidelity_new_phi, new_phi_ham, sign*step_size
+        return fidelity_phi, fidelity_new_phi, new_phi_ham, sign * step_size
 
     def _construct_fidelity_function(self, phi_ham, coeffs):
         def fidelity_f(epsilon):
             phi_h = Hamiltonian(self.basis, phi_ham.parameters + (epsilon * coeffs))
             return phi_h.fidelity(self.target_unitary)
+
         return fidelity_f
