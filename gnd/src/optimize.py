@@ -121,8 +121,6 @@ class Optimizer:
              enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
-        print(omega_phis.shape)
-        print(gamma.parameters.shape)
         coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices,
                                                         self.commuting_ansatz_matrix)
 
@@ -168,7 +166,7 @@ class Optimizer:
         for i, index in enumerate(projected_indices):
             if not index:
                 expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
-        print(expander_matrix.shape)
+        #TODO something breaks here, haven't figured out what.
         res = spo.least_squares(
             lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
             x0=np.zeros(num_params),
