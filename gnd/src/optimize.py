@@ -1,5 +1,6 @@
 from jax.config import config
 import numpy as np
+
 cPRECISION = np.complex64
 config.update("jax_enable_x64", cPRECISION.__name__ == 'complex128')
 import scipy.optimize as spo
@@ -54,26 +55,33 @@ class Optimizer:
     max_steps : int
     precision : float
     """
-    def __init__(self, target_unitary, basis, init_parameters=None, max_steps=1000, precision=0.999, max_step_size=2):
+
+    def __init__(self, target_unitary, full_basis, projected_basis, init_parameters=None, max_steps=1000,
+                 precision=0.999, max_step_size=2):
         self.target_unitary = target_unitary
-        self.basis = basis
-        self.n_qubits = basis.n
+        self.full_basis = full_basis
+        self.projected_basis = projected_basis
+
+        self.projected_basis_indices = self.full_basis.project(self.projected_basis)
+
+        self.n_qubits = full_basis.n
         self.init_parameters = init_parameters
         self.max_steps = max_steps
         self.precision = precision
         self.max_step_size = max_step_size
 
-        self.projected_indices = self.basis.two_body_projection_indices()
-        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, basis, self.projected_indices)
+        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis, projected_basis)
 
         if init_parameters is None:
-            self.init_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
+            self.init_parameters = 2 * np.random.rand(len(full_basis))
+
         self.parameters = [self.init_parameters]
-        self.fidelities = [Hamiltonian(basis, self.init_parameters).fidelity(target_unitary)]
+        self.fidelities = [Hamiltonian(projected_basis,
+                                       self._get_ansatz_parameters(self.init_parameters)).fidelity(target_unitary)]
         self.step_sizes = [0]
         self.steps = [0]
         compute_matrix_fn = get_compute_matrix_fn(commuting_ansatz_matrix=self.commuting_ansatz_matrix,
-                                                  basis=self.basis.basis)
+                                                  basis=self.projected_basis.basis)
         self.jac = jax.jacobian(compute_matrix_fn, argnums=0, holomorphic=True)
         self.compute_matrix = jax.jit(compute_matrix_fn)
         self.is_succesful = self.optimize()
@@ -96,8 +104,8 @@ class Optimizer:
     def update_step(self, step_count=(None, None)):
         # Step 0: find the unitary from phi
         phi = self.parameters[-1]
-        phi_ham = Hamiltonian(self.basis, phi)
-        free_params = np.multiply(self.free_indices, self.parameters[-1])
+        phi_ham = Hamiltonian(self.full_basis, phi)
+        free_params = self._get_free_parameters(self.parameters[-1])
 
         # Step 1: find the geodesic between phi_U and target_V
         gamma = phi_ham.geodesic_hamiltonian(self.target_unitary)
@@ -109,10 +117,12 @@ class Optimizer:
 
         # After contracting, move the parameter derivative axis to the first position
         omega_phis = np.array(
-            [self.projected_indices[i] * Hamiltonian.parameters_from_hamiltonian(omega, self.basis) for i, omega in
+            [Hamiltonian.parameters_from_hamiltonian(omega, self.projected_basis) for i, omega in
              enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
+        print(omega_phis.shape)
+        print(gamma.parameters.shape)
         coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices,
                                                         self.commuting_ansatz_matrix)
 
@@ -121,7 +131,8 @@ class Optimizer:
                 f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                    ",
                 end="\r")
             random_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
-            new_phi_ham = Hamiltonian(self.basis, random_parameters)
+
+            new_phi_ham = Hamiltonian(self.full_basis, random_parameters)
             fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
             # step_size = spla.norm(new_phi_ham.parameters - phi)
             return new_phi_ham, fidelity_new_phi, 0
@@ -157,6 +168,7 @@ class Optimizer:
         for i, index in enumerate(projected_indices):
             if not index:
                 expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
+        print(expander_matrix.shape)
         res = spo.least_squares(
             lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
             x0=np.zeros(num_params),
@@ -190,7 +202,17 @@ class Optimizer:
 
     def _construct_fidelity_function(self, phi_ham, coeffs):
         def fidelity_f(epsilon):
-            phi_h = Hamiltonian(self.basis, phi_ham.parameters + (epsilon * coeffs))
+            phi_h = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * coeffs))
             return phi_h.fidelity(self.target_unitary)
 
         return fidelity_f
+
+    def _get_projected_parameters(self, parameters):
+        return parameters[self.projected_basis_indices]
+
+    def _get_ansatz_parameters(self, parameters):
+        new_parameters = parameters[self.projected_basis_indices]
+        return self.commuting_ansatz_matrix @ new_parameters
+
+    def _get_free_parameters(self, parameters):
+        return np.multiply(self.free_indices, self._get_projected_parameters(parameters))

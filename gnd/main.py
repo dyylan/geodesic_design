@@ -14,7 +14,9 @@ from configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight3
 config = FredkinConfig()
 
 if __name__ == "__main__":
-    b = basis.PauliBasis(config.nqubits)
+    full_basis = basis.construct_full_pauli_basis(config.nqubits)
+    projection_basis = basis.construct_two_body_pauli_basis(config.nqubits)
+
 
     # init_parameters = utils.prepare_random_initial_parameters(config.unitary, b)
     # ham = -1.j * spla.logm(config.unitary)
@@ -46,6 +48,6 @@ if __name__ == "__main__":
 
     # init_parameters = b.two_body_projection(init_parameters)
     # dat = data.OptimizationData(config, load_data=False)
-    optimize = optimize.Optimizer(config.unitary, b, max_steps=1000, max_step_size=2)
+    optimize = optimize.Optimizer(config.unitary, full_basis, projection_basis, max_steps=1000, max_step_size=2)
     # dat = data.OptimizationData(config, optimizers=[optimize], load_data=True)
     # dat.save_data()

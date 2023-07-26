@@ -36,7 +36,7 @@ if __name__ == "__main__":
     b = basis.PauliBasis(config.nqubits)
 
     init_parameters = 2 * np.random.rand(len(b.basis)) - 1
-    init_parameters = b.two_body_projection(init_parameters)
+    init_parameters = b.linear_span(init_parameters)
     dat = data.OptimizationData(config, load_data=False)
     if dat.exists():
         print("Data already exists, skipping...")

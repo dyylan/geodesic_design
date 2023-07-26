@@ -19,18 +19,18 @@ def prepare_random_parameters(proj_indices, commuting_matrix):
     parameters = commuting_matrix @ np.multiply(proj_indices, randoms)
     return parameters
 
-def commuting_ansatz(target_unitary, basis, projected_indices):
+def commuting_ansatz(target_unitary, basis, projected_basis):
     ham = -1.j * spla.logm(target_unitary)
     target_params = lie.Hamiltonian.parameters_from_hamiltonian(ham, basis)
     target_ham = lie.Hamiltonian(basis, target_params)
-    h_params = [sympy.Symbol(f'h_{i}') if ind else 0 for i, ind in enumerate(projected_indices)]
-    h_params_squared = [sympy.Symbol(f'h_{i}')**2 if ind else 0 for i, ind in enumerate(projected_indices)]
+    h_params = [sympy.Symbol(f'h_{i}') for i in range(len(projected_basis))]
+    h_params_squared = [sympy.Symbol(f'h_{i}')**2 for i in range(len(projected_basis))]
     h_mat = None
-    for i, b in enumerate(target_ham.basis.basis):
+    for i in range(len(projected_basis)):
         if h_mat is None:
-            h_mat = h_params[i] * sympy.Matrix(b)
+            h_mat = h_params[i] * sympy.Matrix(projected_basis.basis[i])
         else:
-            h_mat += h_params[i] * sympy.Matrix(b)
+            h_mat += h_params[i] * sympy.Matrix(projected_basis.basis[i])
     # h_mat = sum([h_params[i] * sympy.Matrix(b) for i, b in enumerate(target_ham.basis.basis)])
     # sols = sympy.solve([h_mat * target_ham.matrix - target_ham.matrix * h_mat, sum(h_params_squared)-1])
     sols = sympy.solve(h_mat * target_ham.matrix - target_ham.matrix * h_mat)
@@ -55,7 +55,7 @@ def construct_commuting_ansatz_matrix(params, sols):
     return mat
 
 def remove_solution_free_parameters(params, sols):
-    indices = [0 if h in sols else 1 if h else 0 for h in params]
+    indices = np.array([0 if h in sols else 1 if h else 0 for h in params])
     return indices
 
 def multikron(matrices):
