@@ -76,6 +76,7 @@ class Optimizer:
             self.init_parameters = 2 * np.random.rand(len(full_basis))
 
         self.parameters = [self.init_parameters]
+        print(self.init_parameters)
         self.fidelities = [Hamiltonian(projected_basis,
                                        self._get_ansatz_parameters(self.init_parameters)).fidelity(target_unitary)]
         self.step_sizes = [0]
@@ -117,7 +118,7 @@ class Optimizer:
 
         # After contracting, move the parameter derivative axis to the first position
         omega_phis = np.array(
-            [Hamiltonian.parameters_from_hamiltonian(omega, self.projected_basis) for i, omega in
+            [Hamiltonian.parameters_from_hamiltonian(omega, self.full_basis) for i, omega in
              enumerate(omegas)])
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
@@ -179,15 +180,19 @@ class Optimizer:
 
     def _new_phi_golden_section_search(self, phi_ham, coeffs, step_size):
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
-        f = self._construct_fidelity_function(phi_ham, coeffs)
+        expanded_coeffs = np.zeros_like(phi_ham.parameters)
+        expanded_coeffs[self.projected_basis_indices] = coeffs
+        f = self._construct_fidelity_function(phi_ham, expanded_coeffs)
         epsilon, fidelity_new_phi = golden_section_search(f, -step_size, 0, tol=1e-5)
-        new_phi_ham = Hamiltonian(self.basis, phi_ham.parameters + (epsilon * coeffs))
+        new_phi_ham = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * expanded_coeffs))
         return fidelity_phi, fidelity_new_phi, new_phi_ham, epsilon
 
     def _new_phi_full(self, phi_ham, coeffs, step_size):
-        delta_phi = step_size * coeffs
-        new_phi_minus = Hamiltonian(self.basis, phi_ham.parameters - delta_phi)
-        new_phi_plus = Hamiltonian(self.basis, phi_ham.parameters + delta_phi)
+        expanded_coeffs = np.zeros_like(phi_ham.parameters)
+        expanded_coeffs[self.projected_basis_indices] = coeffs
+        delta_phi = step_size * expanded_coeffs
+        new_phi_minus = Hamiltonian(self.full_basis, phi_ham.parameters - delta_phi)
+        new_phi_plus = Hamiltonian(self.full_basis, phi_ham.parameters + delta_phi)
         if new_phi_minus.fidelity(self.target_unitary) > new_phi_plus.fidelity(self.target_unitary):
             new_phi_ham = new_phi_minus
             sign = -1

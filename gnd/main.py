@@ -48,6 +48,7 @@ if __name__ == "__main__":
 
     # init_parameters = b.two_body_projection(init_parameters)
     # dat = data.OptimizationData(config, load_data=False)
+    np.random.seed(1234)
     optimize = optimize.Optimizer(config.unitary, full_basis, projection_basis, max_steps=1000, max_step_size=2)
     # dat = data.OptimizationData(config, optimizers=[optimize], load_data=True)
     # dat.save_data()
