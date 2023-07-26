@@ -1,5 +1,18 @@
 import numpy as np
+import jax.numpy as jnp
+import jax
 import itertools as it
+
+
+def get_traces(basis):
+    @jax.vmap
+    def traces(x):
+        # Get all dot products A_i @ A_j
+        outer = jnp.einsum('ij,mjk->mik', x, basis)
+        # Get the trace of all dot products
+        return jnp.einsum('mkk->m', outer)
+
+    return traces
 
 
 class Basis:
@@ -8,14 +21,10 @@ class Basis:
         assert (basis.shape[1] == basis.shape[2]) and (np.log2(basis.shape[1]) == int(np.log2(basis.shape[1]))), \
             '`basis` must be a tensor of shape (n, 2**n, 2**n), where n corresponds to the matrix dimension, ' \
             f'received {basis.shape}'
-        # Get all dot products A_i @ A_j
-        outer = np.einsum('nij,mjk->nmik', basis, basis)
-        # Get the trace of all dot products
-        traces = np.einsum('ijkk->ij', outer)
-        assert np.allclose(np.diag(np.diag(traces)), traces), 'basis is not orthogonal with respect to the trace'
         self._basis = basis
         self._dim = basis.shape[1]
         self._n = int(np.log2(basis.shape[1]))
+        self.traces = get_traces(self.basis)
         assert self._n
 
     def linear_span(self, parameters):
@@ -23,11 +32,12 @@ class Basis:
         return np.einsum('nij,nij->ij', parameters, self._basis)
 
     def overlap(self, other):
-        # Get all dot products A_i @ A_j
-        outer = np.einsum('nij,mjk->nmik', self._basis, other._basis)
-        # Get the trace of all dot products
-        traces = np.einsum('ijkk->ij', outer)
-        return ~np.isclose(np.sum(traces, axis=1), 0)
+        traces = self.traces(other.basis)
+        return ~np.isclose(np.sum(traces, axis=0), 0)
+
+    def verify(self):
+        traces = self.traces(self.basis)
+        return np.allclose(np.diag(np.diag(traces)), traces)
 
     @property
     def basis(self):
