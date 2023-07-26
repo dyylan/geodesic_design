@@ -14,6 +14,7 @@ class Basis:
         traces = np.einsum('ijkk->ij', outer)
         assert np.allclose(np.diag(np.diag(traces)), traces), 'basis is not orthogonal with respect to the trace'
         self._basis = basis
+        self._dim = basis.shape[1]
         self._n = int(np.log2(basis.shape[1]))
         assert self._n
 
@@ -21,12 +22,13 @@ class Basis:
         parameters = np.reshape(parameters, (-1, 1, 1))
         return np.einsum('nij,nij->ij', parameters, self._basis)
 
-    def project(self, other):
+    def overlap(self, other):
         # Get all dot products A_i @ A_j
         outer = np.einsum('nij,mjk->nmik', self._basis, other._basis)
         # Get the trace of all dot products
         traces = np.einsum('ijkk->ij', outer)
         return ~np.isclose(np.sum(traces, axis=1), 0)
+
     @property
     def basis(self):
         return self._basis
@@ -34,6 +36,10 @@ class Basis:
     @property
     def n(self):
         return self._n
+
+    @property
+    def dim(self):
+        return self._dim
 
     @property
     def shape(self):

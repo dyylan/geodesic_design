@@ -9,20 +9,43 @@ import jax
 import jax.numpy as jnp
 
 from .lie import Hamiltonian
-from .utils import golden_section_search, commuting_ansatz, prepare_random_initial_parameters, prepare_random_parameters
+from .utils import golden_section_search, commuting_ansatz, prepare_random_parameters
 
 
 # Roeland: One thing I recently learned is that you want to make sure that jitted functions are pure functions that
 # do not rely on stateful objects, i.e. self.object. Jax will think that these objects are dynamical and slow down.
 # You want to return a helper function that feeds in all the static objects and return a function that only depends
 # on the non-static inputs.
-def get_compute_matrix_fn(commuting_ansatz_matrix, basis):
+def get_compute_matrix_fn(commuting_ansatz_matrix: np.ndarray, basis: np.ndarray):
     def compute_matrix(params):
         commuting_params = jnp.matmul(commuting_ansatz_matrix, params)
         A = jnp.tensordot(commuting_params, basis, axes=[[-1], [0]])
         return jax.scipy.linalg.expm(1j * A)
 
     return compute_matrix
+
+
+def get_project_omegas_fn(basis: np.ndarray, dim: int):
+    def project_omegas(x):
+        return jnp.real(jnp.einsum("ijk, nkj->ni", basis, x)) / dim
+
+    return project_omegas
+
+
+def get_Udagger_dU_contraction_fn():
+    def Udagger_dU_contraction(x, y):
+        return 1j * jnp.transpose(jnp.tensordot(x, y, axes=[[1], [0]]), [2, 0, 1])
+
+    return Udagger_dU_contraction
+
+
+def get_fidelity_fn(basis: np.ndarray, target: np.ndarray):
+    def fidelity(epsilon, x, y):
+        phi_h = jnp.einsum("ijk,i->jk", basis, x + epsilon * y)
+        unitary = jax.scipy.linalg.expm(1j * phi_h)
+        return jnp.abs(jnp.trace(target.conj().T @ unitary)) / len(target[0])
+
+    return fidelity
 
 
 class Optimizer:
@@ -32,14 +55,14 @@ class Optimizer:
     Parameters
     ----------
     target_unitary : np.ndarray
-        Target unitary for the optimizer to search towards. 
-    basis : basis.Basis
-        Generally basis.PauliBasis object, defines the basis of the Lie algebra for the phi 
+        Target unitary for the optimizer to search towards.
+    full_basis : basis.Basis
+        Generally basis.PauliBasis object, defines the basis of the Lie algebra for the phi
         parameters
     init_parameters : np.ndarray
         The initial parameters of the Hamiltonian to be optimized.
     max_steps : int, default=1000
-        Number of steps before optimization is halted. 
+        Number of steps before optimization is halted.
     precision : float, default=0.999
         Precision of before a final solution is accepted.
 
@@ -47,10 +70,10 @@ class Optimizer:
     ----------
     target_unitary : np.ndarray
         Stores the target unitary as a unitary object.
-    basis : basis.Basis
+    full_basis : basis.Basis
         The basis of the parameters for the Hamiltonian.
-    n_qubits : int
-        The number of qubits being optimized over.
+    projected_basis : basis.Basis
+        The basis of the restricted Hamiltonian
     init_parameters : np.ndarray
     max_steps : int
     precision : float
@@ -61,30 +84,43 @@ class Optimizer:
         self.target_unitary = target_unitary
         self.full_basis = full_basis
         self.projected_basis = projected_basis
-
-        self.projected_basis_indices = self.full_basis.project(self.projected_basis)
-
-        self.n_qubits = full_basis.n
         self.init_parameters = init_parameters
         self.max_steps = max_steps
         self.precision = precision
         self.max_step_size = max_step_size
-
-        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis, projected_basis)
-
+        # Get the projected and free indices in the full space
+        self.projected_indices = np.array(full_basis.overlap(projected_basis), dtype=bool)
+        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis,
+                                                                           self.projected_indices)
+        # Get the free indices within the projected space
+        indices = np.where(self.projected_indices)[0]
+        free_indices = np.where(self.free_indices)[0]
+        locs = np.array([np.where(indices == idx)[0] for idx in free_indices])
+        self.free_indices_small = np.zeros(len(indices), dtype=int)
+        self.free_indices_small[locs] = 1
+        # Get the matrix that gives us the projection parameters within the projected space
+        self.commuting_ansatz_matrix_free = self.commuting_ansatz_matrix[self.projected_indices, :][:,
+                                            self.projected_indices]
+        # Initialize variables
         if init_parameters is None:
-            self.init_parameters = 2 * np.random.rand(len(full_basis))
-
+            self.init_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
         self.parameters = [self.init_parameters]
-        print(self.init_parameters)
-        self.fidelities = [Hamiltonian(projected_basis,
-                                       self._get_ansatz_parameters(self.init_parameters)).fidelity(target_unitary)]
+        self.fidelities = [Hamiltonian(full_basis, self.init_parameters).fidelity(target_unitary)]
         self.step_sizes = [0]
         self.steps = [0]
-        compute_matrix_fn = get_compute_matrix_fn(commuting_ansatz_matrix=self.commuting_ansatz_matrix,
+        # Get the Jax functions from the helper functions
+        compute_matrix_fn = get_compute_matrix_fn(commuting_ansatz_matrix=self.commuting_ansatz_matrix_free,
                                                   basis=self.projected_basis.basis)
+        project_omegas_fn = get_project_omegas_fn(self.full_basis.basis, self.full_basis.dim)
+        Udagger_dU_contraction = get_Udagger_dU_contraction_fn()
+        fidelity = get_fidelity_fn(self.projected_basis.basis, self.target_unitary)
+        # Jit all the Jax functions
         self.jac = jax.jacobian(compute_matrix_fn, argnums=0, holomorphic=True)
         self.compute_matrix = jax.jit(compute_matrix_fn)
+        self.project_omegas = jax.jit(project_omegas_fn)
+        self.Udagger_dU_contractionn = jax.jit(Udagger_dU_contraction)
+        self.fidelity = jax.jit(fidelity)
+        # Start optimization
         self.is_succesful = self.optimize()
 
     def optimize(self):
@@ -106,26 +142,29 @@ class Optimizer:
         # Step 0: find the unitary from phi
         phi = self.parameters[-1]
         phi_ham = Hamiltonian(self.full_basis, phi)
-        free_params = self._get_free_parameters(self.parameters[-1])
+        free_params = np.multiply(self.free_indices, self.parameters[-1])
 
         # Step 1: find the geodesic between phi_U and target_V
         gamma = phi_ham.geodesic_hamiltonian(self.target_unitary)
 
-        free_params_c = free_params.astype(cPRECISION)
+        free_params_c = free_params.astype(cPRECISION)[self.projected_indices]
+
         dU = self.jac(free_params_c)
         U_dagger = self.compute_matrix(-free_params_c)
-        omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1])
+
+        # omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1]) # OLD
+        omegas = self.Udagger_dU_contractionn(U_dagger, dU)
 
         # After contracting, move the parameter derivative axis to the first position
-        omega_phis = np.array(
-            [Hamiltonian.parameters_from_hamiltonian(omega, self.full_basis) for i, omega in
-             enumerate(omegas)])
+        # omega_phis = np.real(np.einsum("ijk, nkj->ni", self.full_basis.basis, omegas)) / self.full_basis.dim # OLD
+        omega_phis = self.project_omegas(omegas)
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
-        coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices,
-                                                        self.commuting_ansatz_matrix)
+        temp_coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices_small,
+                                                      self.commuting_ansatz_matrix_free)
+        # Expand the coefficients
 
-        if coeffs is None:
+        if temp_coeffs is None:
             print(
                 f"[{step_count[0]}/{step_count[1]}] Didn't find coefficients for Omega direction; restarting...                                                    ",
                 end="\r")
@@ -135,6 +174,10 @@ class Optimizer:
             fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
             # step_size = spla.norm(new_phi_ham.parameters - phi)
             return new_phi_ham, fidelity_new_phi, 0
+
+        # Expand the coefficients to the larger space
+        coeffs = np.zeros_like(phi_ham.parameters)
+        coeffs[self.projected_indices] = temp_coeffs
 
         # Step 4: Apply a small push in the right direction to give a new phi
         fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_golden_section_search(phi_ham, coeffs,
@@ -167,7 +210,6 @@ class Optimizer:
         for i, index in enumerate(projected_indices):
             if not index:
                 expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
-        #TODO something breaks here, haven't figured out what.
         res = spo.least_squares(
             lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
             x0=np.zeros(num_params),
@@ -180,17 +222,14 @@ class Optimizer:
 
     def _new_phi_golden_section_search(self, phi_ham, coeffs, step_size):
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
-        expanded_coeffs = np.zeros_like(phi_ham.parameters)
-        expanded_coeffs[self.projected_basis_indices] = coeffs
-        f = self._construct_fidelity_function(phi_ham, expanded_coeffs)
+        # f = self._construct_fidelity_function(phi_ham, coeffs) # OLD
+        f = lambda x: self.fidelity(x, phi_ham.parameters[self.projected_indices], coeffs[self.projected_indices])
         epsilon, fidelity_new_phi = golden_section_search(f, -step_size, 0, tol=1e-5)
-        new_phi_ham = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * expanded_coeffs))
+        new_phi_ham = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * coeffs))
         return fidelity_phi, fidelity_new_phi, new_phi_ham, epsilon
 
-    def _new_phi_full(self, phi_ham, coeffs, step_size):
-        expanded_coeffs = np.zeros_like(phi_ham.parameters)
-        expanded_coeffs[self.projected_basis_indices] = coeffs
-        delta_phi = step_size * expanded_coeffs
+    def _new_phi_full(self, phi_ham, coeffs, step_size): #TODO could jitify this but probably not necessary
+        delta_phi = step_size * coeffs
         new_phi_minus = Hamiltonian(self.full_basis, phi_ham.parameters - delta_phi)
         new_phi_plus = Hamiltonian(self.full_basis, phi_ham.parameters + delta_phi)
         if new_phi_minus.fidelity(self.target_unitary) > new_phi_plus.fidelity(self.target_unitary):
@@ -203,19 +242,10 @@ class Optimizer:
         fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
         return fidelity_phi, fidelity_new_phi, new_phi_ham, sign * step_size
 
-    def _construct_fidelity_function(self, phi_ham, coeffs):
-        def fidelity_f(epsilon):
-            phi_h = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * coeffs))
-            return phi_h.fidelity(self.target_unitary)
-
-        return fidelity_f
-
-    def _get_projected_parameters(self, parameters):
-        return parameters[self.projected_basis_indices]
-
-    def _get_ansatz_parameters(self, parameters):
-        new_parameters = parameters[self.projected_basis_indices]
-        return self.commuting_ansatz_matrix @ new_parameters
-
-    def _get_free_parameters(self, parameters):
-        return np.multiply(self.free_indices, self._get_projected_parameters(parameters))
+    # def _construct_fidelity_function(self, phi_ham, coeffs): # OLD
+    #     def fidelity_f(epsilon):
+    #         phi_h = Hamiltonian(self.projected_basis,
+    #                             phi_ham.parameters[self.projected_indices] + (epsilon * coeffs[self.projected_indices]))
+    #         return phi_h.fidelity(self.target_unitary)
+    #
+    #     return fidelity_f

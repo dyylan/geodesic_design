@@ -9,43 +9,44 @@ invphi2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
 
 
 def prepare_random_initial_parameters(target_unitary, basis):
-    randoms = 2*np.random.rand(len(basis.basis))-1
+    randoms = 2 * np.random.rand(len(basis.full_basis)) - 1
     proj_indices, mat = commuting_ansatz(target_unitary, basis, basis.two_body_projection_indices())
     init_parameters = mat @ np.multiply(proj_indices, randoms)
     return init_parameters
 
+
 def prepare_random_parameters(proj_indices, commuting_matrix):
-    randoms = 2*np.random.rand(len(proj_indices))
+    randoms = 2 * np.random.rand(len(proj_indices))
     parameters = commuting_matrix @ np.multiply(proj_indices, randoms)
     return parameters
 
-def commuting_ansatz(target_unitary, basis, projected_basis):
+
+def commuting_ansatz(target_unitary, basis, projected_indices):
     ham = -1.j * spla.logm(target_unitary)
     target_params = lie.Hamiltonian.parameters_from_hamiltonian(ham, basis)
     target_ham = lie.Hamiltonian(basis, target_params)
-    h_params = [sympy.Symbol(f'h_{i}') for i in range(len(projected_basis))]
-    h_params_squared = [sympy.Symbol(f'h_{i}')**2 for i in range(len(projected_basis))]
+    h_params = [sympy.Symbol(f'h_{i}') if ind else 0 for i, ind in enumerate(projected_indices)]
+
     h_mat = None
-    for i in range(len(projected_basis)):
+    for i, b in enumerate(target_ham.basis.basis):
         if h_mat is None:
-            h_mat = h_params[i] * sympy.Matrix(projected_basis.basis[i])
+            h_mat = h_params[i] * sympy.Matrix(b)
         else:
-            h_mat += h_params[i] * sympy.Matrix(projected_basis.basis[i])
-    # h_mat = sum([h_params[i] * sympy.Matrix(b) for i, b in enumerate(target_ham.basis.basis)])
-    # sols = sympy.solve([h_mat * target_ham.matrix - target_ham.matrix * h_mat, sum(h_params_squared)-1])
+            h_mat += h_params[i] * sympy.Matrix(b)
+
     sols = sympy.solve(h_mat * target_ham.matrix - target_ham.matrix * h_mat)
-    h_mat_subbed = h_mat.subs(sols)
-    # h_params_free = list(h_mat_subbed.free_symbols).sort(key=str)
+
     indices = remove_solution_free_parameters(h_params, sols)
     mat = construct_commuting_ansatz_matrix(h_params, sols)
     return indices, mat
+
 
 def construct_commuting_ansatz_matrix(params, sols):
     # params = [h for h in h_params if h]
     mat = np.zeros((len(params), len(params)))
     for j, h in enumerate(params):
         if h:
-            h_sub = {m : 0 for m in params if m}
+            h_sub = {m: 0 for m in params if m}
             h_sub[h] = 1
             for i, s in enumerate(params):
                 if i == j:
@@ -54,9 +55,11 @@ def construct_commuting_ansatz_matrix(params, sols):
                     mat[i, j] = sols[s].subs(h_sub)
     return mat
 
+
 def remove_solution_free_parameters(params, sols):
-    indices = np.array([0 if h in sols else 1 if h else 0 for h in params])
+    indices = [0 if h in sols else 1 if h else 0 for h in params]
     return indices
+
 
 def multikron(matrices):
     product = matrices[0]
@@ -64,8 +67,10 @@ def multikron(matrices):
         product = np.kron(product, mat)
     return product
 
+
 def unitary_fidelity(unitary1, unitary2):
-    return np.abs(np.trace(unitary1.conj().T @ unitary2))/len(unitary1[0])
+    return np.abs(np.trace(unitary1.conj().T @ unitary2)) / len(unitary1[0])
+
 
 def golden_section_search(f, a, b, tol=1e-5):
     """Golden-section search.
@@ -73,7 +78,7 @@ def golden_section_search(f, a, b, tol=1e-5):
     Given a function f with a single local minimum in
     the interval [a,b], gss returns a subset interval
     [c,d] that contains the minimum with d-c <= tol.
-    
+
     Example:
     f = lambda x: (x-2)**2
     a = 1
@@ -92,14 +97,14 @@ def golden_section_search(f, a, b, tol=1e-5):
 
     # Required steps to achieve tolerance
     n = int(np.ceil(np.log(tol / h) / np.log(invphi)))
-    
+
     c = a + invphi2 * h
     d = a + invphi * h
     yc = f(c)
     yd = f(d)
-    
-    for k in range(n-1):
-        if yc > yd: 
+
+    for k in range(n - 1):
+        if yc > yd:
             b = d
             d = c
             yd = yc

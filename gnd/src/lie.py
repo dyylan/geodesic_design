@@ -3,6 +3,7 @@ import scipy.linalg as spla
 
 from .utils import unitary_fidelity
 
+
 class Hamiltonian:
     """
     Object representation of the Hamiltonians defined by a Lie algebra basis and phi components.
@@ -26,6 +27,7 @@ class Hamiltonian:
     n : int 
         The number of qubits that the Hamiltonian acts on is stored.
     """
+
     def __init__(self, basis, parameters):
         self.basis = basis
         self.parameters = parameters
@@ -88,6 +90,7 @@ class Hamiltonian:
     def _matrix(self):
         return np.einsum("ijk,i->jk", self.basis.basis, self.parameters)
 
+
 class Unitary:
     """
     Object representation of the Unitary defined by a matrix.
@@ -104,6 +107,7 @@ class Unitary:
     n : int 
         The number of qubits that the unitary acts on.
     """
+
     def __init__(self, unitary):
         self.matrix, self.n = self._check_is_unitary(unitary)
 
@@ -126,5 +130,4 @@ class Unitary:
         if (not np.log2(len(unitary)).is_integer()) or (not unitary.shape[0] == unitary.shape[1]):
             raise ValueError("Matrix given to Unitary must be size 2^n x 2^n")
         return unitary, int(np.log2(len(unitary)))
-    
-    
+
