@@ -2,7 +2,6 @@ from jax.config import config
 import numpy as np
 
 cPRECISION = np.complex64
-# config.update("jax_enable_x64", cPRECISION.__name__ == 'complex128')
 config.update("jax_enable_x64", True)
 import scipy.optimize as spo
 
@@ -158,11 +157,9 @@ class Optimizer:
         dU = self.jac(free_params_c)
         U_dagger = self.compute_matrix(-free_params_c)
 
-        # omegas = 1.j * np.transpose(np.tensordot(U_dagger, dU, axes=[[1], [0]]), [2, 0, 1]) # OLD
         omegas = self.Udagger_dU_contractionn(U_dagger, dU)
 
         # After contracting, move the parameter derivative axis to the first position
-        # omega_phis = np.real(np.einsum("ijk, nkj->ni", self.full_basis.basis, omegas)) / self.full_basis.dim # OLD
         omega_phis = self.project_omegas(omegas)
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
@@ -178,7 +175,7 @@ class Optimizer:
 
             new_phi_ham = Hamiltonian(self.full_basis, random_parameters)
             fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
-            # step_size = spla.norm(new_phi_ham.parameters - phi)
+
             return new_phi_ham, fidelity_new_phi, 0
 
         # Expand the coefficients to the larger space
@@ -228,7 +225,6 @@ class Optimizer:
 
     def _new_phi_golden_section_search(self, phi_ham, coeffs, step_size):
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
-        # f = self._construct_fidelity_function(phi_ham, coeffs) # OLD
         f = lambda x: self.fidelity(x, phi_ham.parameters[self.projected_indices], coeffs[self.projected_indices])
         epsilon, fidelity_new_phi = golden_section_search(f, -step_size, 0, tol=1e-5)
         new_phi_ham = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * coeffs))
@@ -247,11 +243,3 @@ class Optimizer:
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
         fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
         return fidelity_phi, fidelity_new_phi, new_phi_ham, sign * step_size
-    #
-    # def _construct_fidelity_function(self, phi_ham, coeffs): # OLD
-    #     def fidelity_f(epsilon):
-    #         phi_h = Hamiltonian(self.projected_basis,
-    #                             phi_ham.parameters[self.projected_indices] + (epsilon * coeffs[self.projected_indices]))
-    #         return phi_h.fidelity(self.target_unitary)
-    #
-    #     return fidelity_f
