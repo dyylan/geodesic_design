@@ -35,14 +35,14 @@ def commuting_ansatz(target_unitary, basis, projected_indices):
             h_mat += h_params[i] * sympy.Matrix(b)
 
     sols = sympy.solve(h_mat * target_ham.matrix - target_ham.matrix * h_mat)
-
+    h_mat_subbed = h_mat.subs(sols)
+    # h_params_free = list(h_mat_subbed.free_symbols).sort(key=str)
     indices = remove_solution_free_parameters(h_params, sols)
     mat = construct_commuting_ansatz_matrix(h_params, sols)
     return indices, mat
 
 
 def construct_commuting_ansatz_matrix(params, sols):
-    # params = [h for h in h_params if h]
     mat = np.zeros((len(params), len(params)))
     for j, h in enumerate(params):
         if h:
