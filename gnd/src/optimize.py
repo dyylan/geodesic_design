@@ -2,7 +2,8 @@ from jax.config import config
 import numpy as np
 
 cPRECISION = np.complex64
-config.update("jax_enable_x64", cPRECISION.__name__ == 'complex128')
+# config.update("jax_enable_x64", cPRECISION.__name__ == 'complex128')
+config.update("jax_enable_x64", True)
 import scipy.optimize as spo
 
 import jax
@@ -80,7 +81,7 @@ class Optimizer:
     """
 
     def __init__(self, target_unitary, full_basis, projected_basis, init_parameters=None, max_steps=1000,
-                 precision=0.999, max_step_size=2):
+                 precision=0.999, max_step_size=2, commute=True):
         self.target_unitary = target_unitary
         self.full_basis = full_basis
         self.projected_basis = projected_basis
@@ -90,8 +91,13 @@ class Optimizer:
         self.max_step_size = max_step_size
         # Get the projected and free indices in the full space
         self.projected_indices = np.array(full_basis.overlap(projected_basis), dtype=bool)
-        self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis,
-                                                                           self.projected_indices)
+        if commute:
+            self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis,
+                                                                               self.projected_indices)
+        else:
+            self.free_indices = self.projected_indices
+            self.commuting_ansatz_matrix = np.identity(len(self.free_indices))
+
         # Get the free indices within the projected space
         indices = np.where(self.projected_indices)[0]
         free_indices = np.where(self.free_indices)[0]
@@ -241,7 +247,7 @@ class Optimizer:
         fidelity_phi = phi_ham.fidelity(self.target_unitary)
         fidelity_new_phi = new_phi_ham.fidelity(self.target_unitary)
         return fidelity_phi, fidelity_new_phi, new_phi_ham, sign * step_size
-
+    #
     # def _construct_fidelity_function(self, phi_ham, coeffs): # OLD
     #     def fidelity_f(epsilon):
     #         phi_h = Hamiltonian(self.projected_basis,
