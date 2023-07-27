@@ -118,7 +118,7 @@ class Weight2ParityZConfig:
         return ["precision", "max_steps", "seed"]
 
 
-class Weight2ParityZConfig:
+class Weight2ParityXConfig:
     def __init__(self):
         self.nqubits = 3
         self.unitary = (multikron([I, I, I]) + multikron([X, X, I]) + multikron([I, I, X]) - multikron([X, X, X])) / 2
