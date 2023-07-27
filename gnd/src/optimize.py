@@ -1,7 +1,6 @@
 from jax.config import config
 import numpy as np
 
-cPRECISION = np.complex64
 config.update("jax_enable_x64", True)
 import scipy.optimize as spo
 
@@ -152,7 +151,7 @@ class Optimizer:
         # Step 1: find the geodesic between phi_U and target_V
         gamma = phi_ham.geodesic_hamiltonian(self.target_unitary)
 
-        free_params_c = free_params.astype(cPRECISION)[self.projected_indices]
+        free_params_c = free_params[self.projected_indices].astype(np.complex128)
 
         dU = self.jac(free_params_c)
         U_dagger = self.compute_matrix(-free_params_c)

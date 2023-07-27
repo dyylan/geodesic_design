@@ -2,7 +2,7 @@ import numpy as np
 from src import basis, optimize, data
 import argparse
 from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
-    Weight4ParityXConfig, CxNotConfig
+    Weight4ParityXConfig, Weight3ParityXConfig, Weight3ParityZConfig, CxNotConfig
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
@@ -10,12 +10,12 @@ if __name__ == "__main__":
     parser.add_argument('--instance', default=1)
     parser.add_argument('--gate', default='cccnot')
     parser.add_argument('--steps', default=1000)
-    parser.add_argument('--commute', default=True)
+    parser.add_argument('--commute', default=0)
     args = parser.parse_args()
     max_steps = int(args.steps)
     seed = int(args.instance) * 2 ** 8
     gate = args.gate
-    commute = bool(args.commute)
+    commute = bool(int(args.commute))
 
     if gate == 'toffoli':
         config = ToffoliConfig()
@@ -29,6 +29,10 @@ if __name__ == "__main__":
         config = CxNotConfig(5)
     elif gate == 'w2pz':
         config = Weight2ParityZConfig()
+    elif gate == 'w3pz':
+        config = Weight3ParityZConfig()
+    elif gate == 'w3px':
+        config = Weight3ParityXConfig()
     elif gate == 'w4pz':
         config = Weight4ParityZConfig()
     elif gate == 'w4px':
@@ -39,7 +43,8 @@ if __name__ == "__main__":
     config.max_steps = max_steps
     config.commute = commute
 
-    print(f"Running {args.gate} with seed {config.seed} and {max_steps} steps")
+    print(f"Running {args.gate} with seed {config.seed}, {'commuting ansatz ' if commute else 'no ansatz '}"
+          f"and {max_steps} steps")
 
     full_basis = basis.construct_full_pauli_basis(config.nqubits)
     projection_basis = basis.construct_two_body_pauli_basis(config.nqubits)

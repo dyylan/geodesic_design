@@ -81,7 +81,7 @@ def loss_fn(params: jnp.array, target: jnp.array, basis: jnp.array) -> float:
     return 1 - unitary_fidelity(target, unitary)
 
 
-def optimizer_unitary(target: jnp.array, basis: jnp.array, parameters: jnp.array,
+def optimizer_unitary(target: jnp.array, basis: jnp.array, parameters: jnp.array=None,
                       max_steps: int = 1000, learning_rate: float = 1e-1, precision: float = 0.999,
                       optimizer="gd") -> dict:
     """
@@ -102,6 +102,8 @@ def optimizer_unitary(target: jnp.array, basis: jnp.array, parameters: jnp.array
     """
     assert 0.0 <= precision <= 1., f"`precision must be between 0 and 1, received {precision}"
     grad_fn = jax.value_and_grad(loss_fn, argnums=0)
+    if parameters is None:
+        parameters = 2 * np.random.rand(basis.shape[0]) - 1
     loss, _ = grad_fn(parameters, target, basis)
     if optimizer == 'gd':
         opt = GD(learning_rate, lambda x: grad_fn(x, target, basis))
