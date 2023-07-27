@@ -46,6 +46,24 @@ class ToffoliConfig:
         return ["precision", "max_steps", "seed"]
 
 
+class CxNotConfig:
+    def __init__(self, nqubits):
+        self.nqubits = nqubits
+        N = 2**nqubits
+        self.unitary = np.array(
+            [[1 if (i == j and i < N-2) or (i == N-2 and j == N-1) or (i == N-1 and j == N-2) else 0 for i in range(N)] for j in range(N)]
+        )
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.seed = 1
+
+    def __str__(self):
+        return "toffoli"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "seed"]
+
+
 class FredkinConfig:
     def __init__(self):
         self.nqubits = 3
@@ -100,6 +118,21 @@ class Weight2ParityZConfig:
         return ["precision", "max_steps", "seed"]
 
 
+class Weight2ParityZConfig:
+    def __init__(self):
+        self.nqubits = 3
+        self.unitary = (multikron([I, I, I]) + multikron([X, X, I]) + multikron([I, I, X]) - multikron([X, X, X])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.seed = 1
+
+    def __str__(self):
+        return f"w2px"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "seed"]
+
+
 class Weight3ParityZConfig:
     def __init__(self):
         self.nqubits = 4
@@ -110,6 +143,21 @@ class Weight3ParityZConfig:
 
     def __str__(self):
         return f"w3pz"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "seed"]
+
+
+class Weight3ParityXConfig:
+    def __init__(self):
+        self.nqubits = 4
+        self.unitary = (multikron([I, I, I, I]) + multikron([X, X, X, I]) + multikron([I, I, I, X]) - multikron([X, X, X, X])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.seed = 1
+
+    def __str__(self):
+        return f"w3px"
 
     def __dir__(self):
         return ["precision", "max_steps", "seed"]
