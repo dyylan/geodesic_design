@@ -15,13 +15,14 @@ class CnotConfig:
                                  [0, 0, 1, 0]])
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return "toffoli"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class ToffoliConfig:
@@ -37,13 +38,14 @@ class ToffoliConfig:
                                  [0, 0, 0, 0, 0, 0, 1, 0]])
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return "toffoli"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class CxNotConfig:
@@ -55,13 +57,14 @@ class CxNotConfig:
         )
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return "toffoli"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class FredkinConfig:
@@ -77,13 +80,14 @@ class FredkinConfig:
                                  [0, 0, 0, 0, 0, 0, 0, 1]])
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return "fredkin"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class QFTqubitConfig:
@@ -94,13 +98,14 @@ class QFTqubitConfig:
             [[w ** (i * j) for i in range(2 ** self.nqubits)] for j in range(2 ** self.nqubits)])
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"QFT_{self.nqubits}_qubits"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight2ParityZConfig:
@@ -109,13 +114,14 @@ class Weight2ParityZConfig:
         self.unitary = (multikron([I, I, I]) + multikron([Z, Z, I]) + multikron([I, I, X]) - multikron([Z, Z, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w2pz"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight2ParityXConfig:
@@ -124,13 +130,14 @@ class Weight2ParityXConfig:
         self.unitary = (multikron([I, I, I]) + multikron([X, X, I]) + multikron([I, I, X]) - multikron([X, X, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w2px"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight3ParityZConfig:
@@ -139,13 +146,14 @@ class Weight3ParityZConfig:
         self.unitary = (multikron([I, I, I, I]) + multikron([Z, Z, Z, I]) + multikron([I, I, I, X]) - multikron([Z, Z, Z, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w3pz"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight3ParityXConfig:
@@ -154,13 +162,14 @@ class Weight3ParityXConfig:
         self.unitary = (multikron([I, I, I, I]) + multikron([X, X, X, I]) + multikron([I, I, I, X]) - multikron([X, X, X, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w3px"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight4ParityZConfig:
@@ -170,13 +179,14 @@ class Weight4ParityZConfig:
             [I, I, I, I, X]) - multikron([Z, Z, Z, Z, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w4pz"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]
 
 
 class Weight4ParityXConfig:
@@ -186,10 +196,11 @@ class Weight4ParityXConfig:
             [I, I, I, I, X]) - multikron([X, X, X, X, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
+        self.commute = True
         self.seed = 1
 
     def __str__(self):
         return f"w4px"
 
     def __dir__(self):
-        return ["precision", "max_steps", "seed"]
+        return ["precision", "max_steps", "commute", "seed"]

@@ -129,6 +129,9 @@ class OptimizationData:
             elif type(a) is float:
                 a_str = f"m{abs(a):.{float_precision}f}" if str(a)[0] == "-" else f"{a:.{float_precision}f}"
                 conf_folder += "_" + attr + "=" + a_str
+            elif type(a) is bool:
+                a_str = f"m{a}"
+                conf_folder += "_" + attr + "=" + a_str
         conf_folder = conf_folder[1:]
         root_folder = f"{self.folder}/{str(self.config)}/{conf_folder}"
         directory = os.getcwd() + "/" + root_folder

@@ -7,7 +7,7 @@ from src.QubitNetwork import pauli_product
 from src.data_saver import save_log
 
 from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
-    Weight4ParityXConfig
+    Weight4ParityXConfig, CxNotConfig
 
 import qutip
 import sympy
@@ -47,33 +47,28 @@ if __name__ == "__main__":
     gate = args.gate
 
     if gate == 'toffoli':
-        generator = J(3, 0, 0) * pauli(3, 0, 0)
-        generator += J(0, 3, 0) * pauli(0, 3, 0)
-        generator += J(0, 0, 1) * pauli(0, 0, 1)
-        generator += J(3, 0, 3) * (pauli(0, 0, 3) + pauli(3, 0, 3))
-        generator += J(0, 3, 3) * (pauli(0, 0, 3) + pauli(0, 3, 3))
-        generator += (J(1, 0, 1) * pauli(1, 0, 0) + J(0, 1, 1) * pauli(0, 1, 0)) * (
-                pauli(0, 0, 0) + pauli(0, 0, 1))
-        generator += J(2, 2, 0) * (pauli(1, 1, 0) + pauli(2, 2, 0))
-        generator += J(3, 3, 0) * pauli(3, 3, 0)
         target_gate = qutip.Qobj(ToffoliConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'fredkin':
         target_gate = qutip.Qobj(FredkinConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
-        generator = commuting_generator(target_gate, interactions='diagonal')
+        generator = commuting_generator(target_gate, interactions='all')
+    elif gate == 'cccnot':
+        target_gate = qutip.Qobj(CxNotConfig(4).unitary, dims=[[2] * 3, [2] * 3], shape=(16, 16))
+        generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'qft':
         target_gate = qutip.Qobj(QFTqubitConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
-        generator = commuting_generator(target_gate, interactions='diagonal')
+        generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w2pz':
         target_gate = qutip.Qobj(Weight2ParityZConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8), isunitary=True)
-        generator = commuting_generator(target_gate, interactions='diagonal')
+        generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w4pz':
         target_gate = qutip.Qobj(Weight4ParityZConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
                                  isunitary=True)
-        generator = commuting_generator(target_gate, interactions='diagonal')
+        generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w4px':
         target_gate = qutip.Qobj(Weight4ParityXConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
                                  isunitary=True)
-        generator = commuting_generator(target_gate, interactions='diagonal')
+        generator = commuting_generator(target_gate, interactions='all')
     else:
         raise NotImplementedError(f"{gate} not implemented")
 
