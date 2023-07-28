@@ -1,5 +1,5 @@
 import numpy as np
-from src.basis import PauliBasis
+from src.basis import construct_two_body_pauli_basis
 from src.optimizer import optimizer_unitary
 from src.data_saver import save_log
 import argparse
@@ -43,11 +43,8 @@ if __name__ == "__main__":
     else:
         print("Running optimization...")
 
-        b = PauliBasis(config.nqubits)
-        indices = b.two_body_projection_indices()
         np.random.seed(seed)
-        init_parameters = 2 * (np.random.rand(sum(indices)) - 1)
-        projected_basis = b.basis[[bool(idx) for idx in indices]]
+        projected_basis = construct_two_body_pauli_basis(config.nqubits).basis
 
-        data_dict = optimizer_unitary(config.unitary, projected_basis, init_parameters, optimizer='adam')
+        data_dict = optimizer_unitary(config.unitary, projected_basis, optimizer='adam')
         save_log(data_dict, save_path + "/optimization_data.csv")

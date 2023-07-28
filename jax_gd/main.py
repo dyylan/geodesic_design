@@ -1,16 +1,11 @@
-import numpy as np
-from src.basis import PauliBasis
+from src.basis import construct_two_body_pauli_basis
 from src.optimizer import optimizer_unitary
 
 from configs import ToffoliConfig, Weight4ParityXConfig
-import matplotlib.pyplot as plt
 
-config = Weight4ParityXConfig()
+config = ToffoliConfig()
 
 if __name__ == "__main__":
-    b = PauliBasis(config.nqubits)
-    indices = b.two_body_projection_indices()
+    projected_basis = construct_two_body_pauli_basis(config.nqubits).basis
 
-    init_parameters = 2 * (np.random.rand(sum(indices)) - 1)
-    projected_basis = b.basis[[bool(idx) for idx in indices]]
-    data_dict = optimizer_unitary(config.unitary, projected_basis, init_parameters, optimizer='adam')
+    data_dict = optimizer_unitary(config.unitary, projected_basis, optimizer='adam')
