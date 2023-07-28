@@ -6,7 +6,7 @@ from src.QubitNetwork import pauli_product
 
 from src.data_saver import save_log
 
-from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
+from src.configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
     Weight4ParityXConfig, CxNotConfig
 
 import qutip

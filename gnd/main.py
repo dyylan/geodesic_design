@@ -3,7 +3,7 @@ import scipy.linalg as spla
 import matplotlib.pyplot as plt
 from src import basis, optimize, data, utils, lie
 import jax
-from configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight3ParityZConfig, Weight4ParityZConfig, \
+from src.configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight3ParityZConfig, Weight4ParityZConfig, \
     CnotConfig, FredkinConfig, CxNotConfig
 # config = QFTqubitConfig()
 # config = ToffoliConfig()

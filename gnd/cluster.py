@@ -1,7 +1,7 @@
 import numpy as np
 from src import basis, optimize, data
 import argparse
-from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
+from src.configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
     Weight4ParityXConfig, Weight3ParityXConfig, Weight3ParityZConfig, CxNotConfig
 
 if __name__ == "__main__":

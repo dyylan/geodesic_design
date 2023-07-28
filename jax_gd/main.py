@@ -1,7 +1,7 @@
 from src.basis import construct_two_body_pauli_basis
 from src.optimizer import optimizer_unitary
 
-from configs import ToffoliConfig, Weight4ParityXConfig
+from src.configs import ToffoliConfig, Weight4ParityXConfig
 
 config = ToffoliConfig()
 

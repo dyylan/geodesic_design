@@ -3,7 +3,7 @@ from src.basis import construct_two_body_pauli_basis
 from src.optimizer import optimizer_unitary
 from src.data_saver import save_log
 import argparse
-from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
+from src.configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
     Weight4ParityXConfig, CxNotConfig
 import os
 
