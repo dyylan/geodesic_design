@@ -109,7 +109,8 @@ class OptimizationData:
             return 0
         dfs = pd.read_csv(filepath, 
                          index_col=False, 
-                         converters={"parameters": ast.literal_eval})
+                         )
+        dfs.dropna(axis=0, inplace=True)
         samples = dfs["sample"].max()
         self.samples += samples
         for sample in range(1,samples+1):
