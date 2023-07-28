@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.linalg as spla
 
-from .utils import unitary_fidelity
-
 
 class Hamiltonian:
     """
@@ -66,7 +64,7 @@ class Hamiltonian:
         float
             The fidelity.
         """
-        return unitary_fidelity(self.unitary, unitary)
+        return Unitary.unitary_fidelity(self.unitary, unitary)
 
     @staticmethod
     def parameters_from_hamiltonian(hamiltonian, basis):
@@ -123,6 +121,10 @@ class Unitary:
 
         """
         pass
+
+    @staticmethod
+    def unitary_fidelity(unitary1, unitary2):
+        return np.abs(np.trace(unitary1.conj().T @ unitary2)) / len(unitary1[0])
 
     def _check_is_unitary(unitary):
         if not np.allclose(np.eye(len(unitary)), unitary @ unitary.T.conj()):
