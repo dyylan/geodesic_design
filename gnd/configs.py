@@ -61,7 +61,7 @@ class CxNotConfig:
         self.seed = 1
 
     def __str__(self):
-        return "toffoli"
+        return f"C{self.nqubits}Not"
 
     def __dir__(self):
         return ["precision", "max_steps", "commute", "seed"]
