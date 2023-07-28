@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg as spla
 import sympy
 
-from src import lie
+from  . import lie
 
 invphi = (np.sqrt(5) - 1) / 2  # 1 / phi
 invphi2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
@@ -66,10 +66,6 @@ def multikron(matrices):
     for mat in matrices[1:]:
         product = np.kron(product, mat)
     return product
-
-
-def unitary_fidelity(unitary1, unitary2):
-    return np.abs(np.trace(unitary1.conj().T @ unitary2)) / len(unitary1[0])
 
 
 def golden_section_search(f, a, b, tol=1e-5):

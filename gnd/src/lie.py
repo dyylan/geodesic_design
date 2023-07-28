@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.linalg as spla
 
-from .utils import unitary_fidelity
-
 
 class Hamiltonian:
     """
@@ -130,4 +128,8 @@ class Unitary:
         if (not np.log2(len(unitary)).is_integer()) or (not unitary.shape[0] == unitary.shape[1]):
             raise ValueError("Matrix given to Unitary must be size 2^n x 2^n")
         return unitary, int(np.log2(len(unitary)))
+
+    @staticmethod
+    def unitary_fidelity(unitary1, unitary2):
+        return np.abs(np.trace(unitary1.conj().T @ unitary2)) / len(unitary1[0])
 
