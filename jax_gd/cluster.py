@@ -4,7 +4,7 @@ from src.optimizer import optimizer_unitary
 from src.data_saver import save_log
 import argparse
 from configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
-    Weight4ParityXConfig
+    Weight4ParityXConfig, CxNotConfig
 import os
 
 if __name__ == "__main__":
@@ -25,6 +25,8 @@ if __name__ == "__main__":
         config = QFTqubitConfig()
     elif gate == 'fredkin':
         config = FredkinConfig()
+    elif gate=='cccnot':
+        config = CxNotConfig(4)
     elif gate == 'w2pz':
         config = Weight2ParityZConfig()
     elif gate == 'w4pz':

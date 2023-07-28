@@ -53,7 +53,7 @@ if __name__ == "__main__":
         target_gate = qutip.Qobj(FredkinConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'cccnot':
-        target_gate = qutip.Qobj(CxNotConfig(4).unitary, dims=[[2] * 3, [2] * 3], shape=(16, 16))
+        target_gate = qutip.Qobj(CxNotConfig(4).unitary, dims=[[2] * 4, [2] * 4], shape=(16, 16))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'qft':
         target_gate = qutip.Qobj(QFTqubitConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
