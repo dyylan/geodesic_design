@@ -5,12 +5,13 @@ import itertools as it
 
 
 def get_traces(basis):
-    @jax.vmap
+    @jax.jit
     def traces(x):
         # Get all dot products A_i @ A_j
-        outer = jnp.einsum('ij,mjk->mik', x, basis)
+        outer = jnp.einsum('nij,mjk->nmik', x, basis)
         # Get the trace of all dot products
-        return jnp.einsum('mkk->m', outer)
+        out = jax.vmap(lambda x: jnp.einsum('nkk->n', x), in_axes=(1,))(outer).T
+        return out
 
     return traces
 

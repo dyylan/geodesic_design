@@ -134,6 +134,7 @@ class Optimizer:
             new_phi_ham, fidelity, step_size = self.update_step(step_count=(step, self.max_steps))
             self.parameters.append(new_phi_ham.parameters)
             self.fidelities.append(fidelity)
+            print(fidelity)
             self.step_sizes.append(step_size)
             self.steps.append(step)
         print("")
@@ -188,7 +189,7 @@ class Optimizer:
         if fidelity_new_phi > self.precision:
             print(
                 f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
-        elif fidelity_new_phi > fidelity_phi:
+        elif (fidelity_new_phi > fidelity_phi) and not np.isclose(fidelity_new_phi, fidelity_phi, atol=(1 - self.precision) / 100):
             print(
                 f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ",
                 end="\r")

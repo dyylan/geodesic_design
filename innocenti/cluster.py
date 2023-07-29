@@ -47,26 +47,33 @@ if __name__ == "__main__":
     gate = args.gate
 
     if gate == 'toffoli':
-        target_gate = qutip.Qobj(ToffoliConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        config = ToffoliConfig()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'fredkin':
-        target_gate = qutip.Qobj(FredkinConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        config = FredkinConfig()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'cccnot':
-        target_gate = qutip.Qobj(CxNotConfig(4).unitary, dims=[[2] * 4, [2] * 4], shape=(16, 16))
+        config = CxNotConfig(4)
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 4, [2] * 4], shape=(16, 16))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'qft':
-        target_gate = qutip.Qobj(QFTqubitConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
+        config = QFTqubitConfig()()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8))
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w2pz':
-        target_gate = qutip.Qobj(Weight2ParityZConfig().unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8), isunitary=True)
+        config = Weight2ParityZConfig()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 3, [2] * 3], shape=(8, 8), isunitary=True)
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w4pz':
-        target_gate = qutip.Qobj(Weight4ParityZConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
+        config = Weight4ParityZConfig()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
                                  isunitary=True)
         generator = commuting_generator(target_gate, interactions='all')
     elif gate == 'w4px':
-        target_gate = qutip.Qobj(Weight4ParityXConfig().unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
+        config = Weight4ParityXConfig()
+        target_gate = qutip.Qobj(config.unitary, dims=[[2] * 5, [2] * 5], shape=(32, 32),
                                  isunitary=True)
         generator = commuting_generator(target_gate, interactions='all')
     else:
@@ -74,7 +81,7 @@ if __name__ == "__main__":
 
     print(f"Running {gate} with seed {seed}")
 
-    save_path = f'./data/{gate}/max_steps={max_steps}_precision={precision:1.4f}_seed={seed}/'
+    save_path = f'./data/{str(config)}/max_steps={max_steps}_precision={precision:1.4f}_seed={seed}/'
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

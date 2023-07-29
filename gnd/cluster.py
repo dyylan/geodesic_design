@@ -8,9 +8,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
 
     parser.add_argument('--instance', default=1)
-    parser.add_argument('--gate', default='cccnot')
+    parser.add_argument('--gate', default='w3px')
     parser.add_argument('--steps', default=1000)
-    parser.add_argument('--commute', default=0)
+    parser.add_argument('--commute', default=1)
     args = parser.parse_args()
     max_steps = int(args.steps)
     seed = int(args.instance) * 2 ** 8
