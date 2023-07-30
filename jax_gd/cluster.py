@@ -10,8 +10,8 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
 
-    parser.add_argument('--instance', default=1)
-    parser.add_argument('--gate', default='toffoli')
+    parser.add_argument('--instance', default=10)
+    parser.add_argument('--gate', default='cccnot')
     parser.add_argument('--steps', default=1000)
     args = parser.parse_args()
     precision = 0.999
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError(f"{gate} not implemented")
 
-    save_path = f'./data/{gate}/max_steps={max_steps}_precision={precision:1.4f}_seed={seed}/'
+    save_path = f'./data/{str(config)}/max_steps={max_steps}_precision={precision:1.4f}_seed={seed}/'
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

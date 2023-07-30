@@ -16,7 +16,7 @@ from .utils import complex2bigreal
 # from . import net_analysis_tools as nat
 
 
-def _random_input_states(num_states, num_qubits):
+def _random_input_states(num_states, num_qubits, seed=None):
     """Generate a bunch of random input ket states with qutip.
 
     Returns
@@ -30,7 +30,7 @@ def _random_input_states(num_states, num_qubits):
     qutip_dims = [[2 for _ in range(num_qubits)],
                   [1 for _ in range(num_qubits)]]
     return [
-        qutip.rand_ket_haar(length_inputs, dims=qutip_dims)
+        qutip.rand_ket_haar(length_inputs, dims=qutip_dims, seed=seed)
         for _ in range(num_states)
     ]
 
@@ -129,7 +129,6 @@ class QubitNetworkModel(QubitNetwork):
         with zeros. The computed initial values are returned, to be
         stored in self.initial_values from __init__
         """
-        np.random.seed(1234)
         if values is None:
             initial_values = np.random.randn(len(self.free_parameters))
         elif isinstance(values, numbers.Number):
@@ -493,7 +492,7 @@ class QubitNetworkGateModel(QubitNetworkModel):
         else:
             return fidelities
 
-    def generate_training_states(self, num_states):
+    def generate_training_states(self, num_states, seed=None):
         """Create training states for the training.
 
         This function generates every time it is called a set of
@@ -530,7 +529,7 @@ class QubitNetworkGateModel(QubitNetworkModel):
 
         # 1) Generate random input states OVER SYSTEM QUBITS
         training_inputs = _random_input_states(num_states,
-                                               self.num_system_qubits)
+                                               self.num_system_qubits, seed=seed)
         # 2) Compute corresponding output states
         target_outputs = self._target_outputs_from_inputs(training_inputs)
         # 3) Tensor product of training input states with ancillae
@@ -627,11 +626,11 @@ class QubitNetworkDecisionProblemModel(QubitNetworkModel):
         # set size of output ket states (when in complex form)
         self.outputs_size = 2**self.num_qubits_answer
 
-    def generate_training_states(self, num_states):
+    def generate_training_states(self, num_states, seed=None):
         # generate random sets of input states
         inputs = []
         for num_qubits_input in self.num_qubits_per_input:
-            inputs.append(_random_input_states(num_states, num_qubits_input))
+            inputs.append(_random_input_states(num_states, num_qubits_input, seed=seed))
         # transpose `inputs`, to have the i-th element contain the list
         # of input states corresponding to the i-th training input
         inputs = list(zip(*inputs))

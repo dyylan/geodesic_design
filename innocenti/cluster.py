@@ -91,7 +91,10 @@ if __name__ == "__main__":
         print("Running optimization...")
         np.random.seed(seed)
         random.seed(seed)
-        tnet = QubitNetworkGateModel(sympy_expr=generator, initial_values=1)
+        initial_parameters = 2 * np.random.rand(len(list(generator.free_symbols))) - 1
+
+        tnet = QubitNetworkGateModel(sympy_expr=generator, initial_values=initial_parameters)
+
         optimizer = Optimizer(
             net=tnet,
             learning_rate=1,
@@ -102,8 +105,18 @@ if __name__ == "__main__":
             training_dataset_size=200,
             test_dataset_size=100,
             sgd_method='momentum',
-            precision=0.999
+            precision=precision
         )
+
+
+        def unitary_fidelity(unitary1, unitary2):
+            return np.abs(np.trace(unitary1.conj().T @ unitary2)) / len(unitary1[0])
+
+
         optimizer.run()
+        Ufull = tnet.get_current_gate(False)
+        true_fid = unitary_fidelity(Ufull, config.unitary)
+        print(true_fid)
         print("Run completed, saving data...")
+        optimizer.log['fidelities'][optimizer.log['n_epoch']] = true_fid
         save_log(optimizer.log, save_path + "optimization_data.csv")

@@ -2,21 +2,14 @@ import numpy as np
 import scipy.linalg as spla
 import sympy
 
-from  . import lie
+from . import lie
 
 invphi = (np.sqrt(5) - 1) / 2  # 1 / phi
 invphi2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
 
 
-def prepare_random_initial_parameters(target_unitary, basis):
-    randoms = 2 * np.random.rand(len(basis.full_basis)) - 1
-    proj_indices, mat = commuting_ansatz(target_unitary, basis, basis.two_body_projection_indices())
-    init_parameters = mat @ np.multiply(proj_indices, randoms)
-    return init_parameters
-
-
 def prepare_random_parameters(proj_indices, commuting_matrix):
-    randoms = 2 * np.random.rand(len(proj_indices))
+    randoms = 2 * np.random.rand(len(proj_indices)) - 1
     parameters = commuting_matrix @ np.multiply(proj_indices, randoms)
     return parameters
 

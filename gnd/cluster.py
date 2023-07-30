@@ -27,6 +27,8 @@ if __name__ == "__main__":
         config = CxNotConfig(4)
     elif gate == 'ccccnot':
         config = CxNotConfig(5)
+    elif gate == 'cccccnot':
+        config = CxNotConfig(6)
     elif gate == 'w2pz':
         config = Weight2ParityZConfig()
     elif gate == 'w3pz':
