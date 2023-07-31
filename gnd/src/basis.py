@@ -4,13 +4,11 @@ import jax
 import itertools as it
 
 
-def get_traces(basis):
+def get_traces():
     @jax.jit
-    def traces(x):
-        # Get all dot products A_i @ A_j
-        outer = jnp.einsum('nij,mjk->nmik', x, basis)
+    def traces(x, y):
         # Get the trace of all dot products
-        out = jax.vmap(lambda x: jnp.einsum('nkk->n', x), in_axes=(1,))(outer).T
+        out = jnp.trace(x @ y)
         return out
 
     return traces
@@ -25,7 +23,7 @@ class Basis:
         self._basis = basis
         self._dim = basis.shape[1]
         self._n = int(np.log2(basis.shape[1]))
-        self.traces = get_traces(self.basis)
+        self.traces = get_traces()
         assert self._n
 
     def linear_span(self, parameters):
@@ -33,7 +31,15 @@ class Basis:
         return np.einsum('nij,nij->ij', parameters, self._basis)
 
     def overlap(self, other):
-        traces = self.traces(other.basis)
+        if len(self) > len(other):
+            def body(x):
+                return jax.vmap(lambda y: self.traces(x, y))(other.basis)
+            traces = jax.vmap(body)(self.basis).T
+        else:
+            def body(y):
+                return jax.vmap(lambda x: self.traces(x, y))(self.basis)
+            traces = jax.vmap(body)(other.basis)
+
         return ~np.isclose(np.sum(traces, axis=0), 0)
 
     def verify(self):
@@ -106,9 +112,12 @@ def construct_full_pauli_basis(n: int):
 
     return Basis(np.stack(b))
 
-# if __name__ == '__main__':
-#     b = construct_full_pauli_basis(2)
-#     b = construct_two_body_pauli_basis(3)
-#     print(b.basis.shape)
-#     p = np.random.randn(b.basis.shape[0])
-#     print(b.linear_span(p))
+
+if __name__ == '__main__':
+    n = 6
+    b = construct_full_pauli_basis(n)
+    b_proj = construct_two_body_pauli_basis(n)
+    print(b.shape)
+    print(b_proj.shape)
+    print(b_proj.overlap(b))
+    print(b.overlap(b_proj))
