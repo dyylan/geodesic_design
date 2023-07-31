@@ -51,9 +51,10 @@ class ToffoliConfig:
 class CxNotConfig:
     def __init__(self, nqubits):
         self.nqubits = nqubits
-        N = 2**nqubits
+        N = 2 ** nqubits
         self.unitary = np.array(
-            [[1 if (i == j and i < N-2) or (i == N-2 and j == N-1) or (i == N-1 and j == N-2) else 0 for i in range(N)] for j in range(N)]
+            [[1 if (i == j and i < N - 2) or (i == N - 2 and j == N - 1) or (i == N - 1 and j == N - 2) else 0 for i in
+              range(N)] for j in range(N)]
         )
         self.precision = 0.999
         self.max_steps = 1000
@@ -143,7 +144,8 @@ class Weight2ParityXConfig:
 class Weight3ParityZConfig:
     def __init__(self):
         self.nqubits = 4
-        self.unitary = (multikron([I, I, I, I]) + multikron([Z, Z, Z, I]) + multikron([I, I, I, X]) - multikron([Z, Z, Z, X])) / 2
+        self.unitary = (multikron([I, I, I, I]) + multikron([Z, Z, Z, I]) + multikron([I, I, I, X]) - multikron(
+            [Z, Z, Z, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
         self.commute = True
@@ -159,7 +161,8 @@ class Weight3ParityZConfig:
 class Weight3ParityXConfig:
     def __init__(self):
         self.nqubits = 4
-        self.unitary = (multikron([I, I, I, I]) + multikron([X, X, X, I]) + multikron([I, I, I, X]) - multikron([X, X, X, X])) / 2
+        self.unitary = (multikron([I, I, I, I]) + multikron([X, X, X, I]) + multikron([I, I, I, X]) - multikron(
+            [X, X, X, X])) / 2
         self.precision = 0.999
         self.max_steps = 1000
         self.commute = True
@@ -201,6 +204,74 @@ class Weight4ParityXConfig:
 
     def __str__(self):
         return f"w4px"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "commute", "seed"]
+
+
+class Weight5ParityZConfig:
+    def __init__(self):
+        self.nqubits = 6
+        self.unitary = (multikron([I, I, I, I, I, I]) + multikron([Z, Z, Z, Z, Z, X]) + multikron(
+            [I, I, I, I, I, X]) - multikron([Z, Z, Z, Z, Z, Z])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.commute = True
+        self.seed = 1
+
+    def __str__(self):
+        return f"w5pz"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "commute", "seed"]
+
+
+class Weight5ParityXConfig:
+    def __init__(self):
+        self.nqubits = 6
+        self.unitary = (multikron([I, I, I, I, I, I]) + multikron([X, X, X, X, X, I]) + multikron(
+            [I, I, I, I, I, X]) - multikron([X, X, X, X, X, X])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.commute = True
+        self.seed = 1
+
+    def __str__(self):
+        return f"w5px"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "commute", "seed"]
+
+
+class Weight6ParityZConfig:
+    def __init__(self):
+        self.nqubits = 7
+        self.unitary = (multikron([I, I, I, I, I, I]) + multikron([Z, Z, Z, Z, Z, Z, X]) + multikron(
+            [I, I, I, I, I, I, X]) - multikron([Z, Z, Z, Z, Z, Z, Z])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.commute = True
+        self.seed = 1
+
+    def __str__(self):
+        return f"w6pz"
+
+    def __dir__(self):
+        return ["precision", "max_steps", "commute", "seed"]
+
+
+class Weight6ParityXConfig:
+    def __init__(self):
+        self.nqubits = 7
+        self.unitary = (multikron([I, I, I, I, I, I, I]) + multikron([X, X, X, X, X, X, I]) + multikron(
+            [I, I, I, I, I, I, X]) - multikron([X, X, X, X, X, X, X])) / 2
+        self.precision = 0.999
+        self.max_steps = 1000
+        self.commute = True
+        self.seed = 1
+
+    def __str__(self):
+        return f"w6px"
 
     def __dir__(self):
         return ["precision", "max_steps", "commute", "seed"]
