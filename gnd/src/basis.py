@@ -4,14 +4,30 @@ import jax
 import itertools as it
 
 
-def get_traces():
-    @jax.jit
-    def traces(x, y):
-        # Get the trace of all dot products
-        out = jnp.trace(x @ y)
-        return out
+@jax.jit
+def trace_dot_jit(x, y):
+    return jnp.trace(x @ y)
 
-    return traces
+
+def traces(b_1, b_2):
+    indices = []
+    len_1 = b_1.shape[0]
+    len_2 = b_2.shape[0]
+    for i in range(len_1):
+        for j in range(len_2):
+            indices.append([i, j])
+    indices = np.stack(indices)
+    jself = jnp.array(b_1)
+    jother = jnp.array(b_2)
+    carry = jnp.empty((len_1, len_2), dtype=complex)
+
+    def scan_body(c, idx):
+        idx, jdx = idx
+        c = c.at[idx, jdx].set(trace_dot_jit(jself[idx], jother[jdx]))
+        return c, None
+
+    carry, _ = jax.lax.scan(scan_body, init=carry, xs=indices)
+    return carry
 
 
 class Basis:
@@ -23,7 +39,6 @@ class Basis:
         self._basis = basis
         self._dim = basis.shape[1]
         self._n = int(np.log2(basis.shape[1]))
-        self.traces = get_traces()
         assert self._n
 
     def linear_span(self, parameters):
@@ -31,20 +46,12 @@ class Basis:
         return np.einsum('nij,nij->ij', parameters, self._basis)
 
     def overlap(self, other):
-        if len(self) > len(other):
-            def body(x):
-                return jax.vmap(lambda y: self.traces(x, y))(other.basis)
-            traces = jax.vmap(body)(self.basis).T
-        else:
-            def body(y):
-                return jax.vmap(lambda x: self.traces(x, y))(self.basis)
-            traces = jax.vmap(body)(other.basis)
-
-        return ~np.isclose(np.sum(traces, axis=0), 0)
+        out = traces(self.basis, other.basis)
+        return ~np.isclose(np.sum(out, axis=0), 0)
 
     def verify(self):
-        traces = self.traces(self.basis)
-        return np.allclose(np.diag(np.diag(traces)), traces)
+        out = traces(self.basis, self.basis)
+        return np.allclose(np.diag(np.diag(out)), out)
 
     @property
     def basis(self):
@@ -113,11 +120,11 @@ def construct_full_pauli_basis(n: int):
     return Basis(np.stack(b))
 
 
-if __name__ == '__main__':
-    n = 6
-    b = construct_full_pauli_basis(n)
-    b_proj = construct_two_body_pauli_basis(n)
-    print(b.shape)
-    print(b_proj.shape)
-    print(b_proj.overlap(b))
-    print(b.overlap(b_proj))
+# if __name__ == '__main__':
+#     n = 6
+#     b = construct_full_pauli_basis(n)
+#     b_proj = construct_two_body_pauli_basis(n)
+#     print(b.shape)
+#     print(b_proj.shape)
+#     print(b_proj.overlap(b))
+#     print(b.overlap(b_proj))

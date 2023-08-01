@@ -3,8 +3,7 @@ import scipy.linalg as spla
 import matplotlib.pyplot as plt
 from src import basis, optimize, data, utils, lie
 import jax
-from src.configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Weight3ParityZConfig, Weight4ParityZConfig, \
-    CnotConfig, FredkinConfig, CxNotConfig, Weight3ParityXConfig
+from src.configs import *
 # config = QFTqubitConfig()
 # config = ToffoliConfig()
 # config = CnotConfig()
@@ -12,8 +11,10 @@ from src.configs import ToffoliConfig, QFTqubitConfig, Weight2ParityZConfig, Wei
 # config = Weight3ParityXConfig()
 # config = Weight3ParityZConfig()
 # config = Weight4ParityZConfig()
+config = Weight5ParityZConfig()
+# config = Weight6ParityXConfig()
 # config = FredkinConfig()
-config = CxNotConfig(6)
+# config = CxNotConfig(6)
 
 if __name__ == "__main__":
     full_basis = basis.construct_full_pauli_basis(config.nqubits)
@@ -50,7 +51,8 @@ if __name__ == "__main__":
     # dat = data.OptimizationData(config, load_data=False)
     import time
     start = time.time()
-    optimize = optimize.Optimizer(config.unitary, full_basis, projection_basis, max_steps=1000, max_step_size=1,
+    print('optimizer')
+    optimize = optimize.Optimizer(config.unitary, full_basis, projection_basis, max_steps=1000, max_step_size=2,
                                   commute=False)
 
     print(f"elapsed time = {time.time()-start}")

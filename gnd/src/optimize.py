@@ -88,7 +88,7 @@ class Optimizer:
         self.precision = precision
         self.max_step_size = max_step_size
         # Get the projected and free indices in the full space
-        self.projected_indices = np.array(full_basis.overlap(projected_basis), dtype=bool)
+        self.projected_indices = np.array(projected_basis.overlap(full_basis), dtype=bool)
         if commute:
             self.free_indices, self.commuting_ansatz_matrix = commuting_ansatz(target_unitary, full_basis,
                                                                                self.projected_indices)

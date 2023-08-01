@@ -246,7 +246,7 @@ class Weight5ParityXConfig:
 class Weight6ParityZConfig:
     def __init__(self):
         self.nqubits = 7
-        self.unitary = (multikron([I, I, I, I, I, I]) + multikron([Z, Z, Z, Z, Z, Z, X]) + multikron(
+        self.unitary = (multikron([I, I, I, I, I, I, I]) + multikron([Z, Z, Z, Z, Z, Z, X]) + multikron(
             [I, I, I, I, I, I, X]) - multikron([Z, Z, Z, Z, Z, Z, Z])) / 2
         self.precision = 0.999
         self.max_steps = 1000

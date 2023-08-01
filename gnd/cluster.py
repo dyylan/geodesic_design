@@ -1,8 +1,7 @@
 import numpy as np
 from src import basis, optimize, data
 import argparse
-from src.configs import ToffoliConfig, QFTqubitConfig, FredkinConfig, Weight2ParityZConfig, Weight4ParityZConfig, \
-    Weight4ParityXConfig, Weight3ParityXConfig, Weight3ParityZConfig, CxNotConfig
+from src.configs import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
@@ -39,6 +38,14 @@ if __name__ == "__main__":
         config = Weight4ParityZConfig()
     elif gate == 'w4px':
         config = Weight4ParityXConfig()
+    elif gate == 'w5pz':
+        config = Weight5ParityZConfig()
+    elif gate == 'w5px':
+        config = Weight5ParityXConfig()
+    elif gate == 'w6pz':
+        config = Weight6ParityZConfig()
+    elif gate == 'w6px':
+        config = Weight6ParityXConfig()
     else:
         raise NotImplementedError(f"{args.gate} not implemented")
     config.seed = seed
