@@ -134,7 +134,6 @@ class Optimizer:
             new_phi_ham, fidelity, step_size = self.update_step(step_count=(step, self.max_steps))
             self.parameters.append(new_phi_ham.parameters)
             self.fidelities.append(fidelity)
-            print(fidelity)
             self.step_sizes.append(step_size)
             self.steps.append(step)
         print("")
@@ -213,10 +212,18 @@ class Optimizer:
         for i, index in enumerate(projected_indices):
             if not index:
                 expander_matrix = np.insert(expander_matrix, i, np.zeros(num_params), axis=0)
-        res = spo.least_squares(
-            lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
-            x0=np.zeros(num_params),
-            method='lm')
+        try:
+            res = spo.least_squares(
+                lambda x: combination_vectors.T @ commuting_ansatz @ expander_matrix @ x - target_vector,
+                x0=np.zeros(num_params),
+                method='lm')
+
+        except ValueError as e:
+            if str(e) == "Residuals are not finite in the initial point.":
+                return None
+            else:
+                raise
+
         if not res.success:
             return None
         else:
