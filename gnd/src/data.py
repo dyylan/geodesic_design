@@ -48,7 +48,17 @@ class OptimizationData:
         self._is_optimizer_loaded()
         index = self._find_sample(sample)
         return self.optimizers[index]["fidelities"]
-    
+
+    def running_fidelities(self, sample):
+        self._is_optimizer_loaded()
+        index = self._find_sample(sample)
+        fs = self.optimizers[index]["fidelities"]
+        running_fidelities = [fs[0]]
+        for i, f in enumerate(fs[1:]):
+            fr = f if f > running_fidelities[i-1] else running_fidelities[i-1]
+            running_fidelities.append(fr)
+        return running_fidelities
+
     def step_sizes(self, sample):
         self._is_optimizer_loaded()
         index = self._find_sample(sample)
