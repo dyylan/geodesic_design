@@ -129,9 +129,9 @@ class Optimizer:
 
     def optimize(self):
         step = 0
-        while (self.fidelities[-1] < self.precision) and (step < self.max_steps):
+        while (self.fidelities[-1] < self.precision) and (step < (self.max_steps - 1)):
             step += 1
-            new_phi_ham, fidelity, step_size = self.update_step(step_count=(step, self.max_steps))
+            new_phi_ham, fidelity, step_size = self.update_step(step_count=(step+1, self.max_steps))
             self.parameters.append(new_phi_ham.parameters)
             self.fidelities.append(fidelity)
             self.step_sizes.append(step_size)
@@ -163,7 +163,7 @@ class Optimizer:
 
         # Step 3: Find a linear combination of Omegas that gives the geodesic and update parameters
         temp_coeffs = Optimizer.linear_comb_projected_coeffs(omega_phis, gamma.parameters, self.free_indices_small,
-                                                      self.commuting_ansatz_matrix_free)
+                                                             self.commuting_ansatz_matrix_free)
         # Expand the coefficients
 
         if temp_coeffs is None:
@@ -188,7 +188,8 @@ class Optimizer:
         if fidelity_new_phi > self.precision:
             print(
                 f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] A solution!                                                                     ")
-        elif (fidelity_new_phi > fidelity_phi) and not np.isclose(fidelity_new_phi, fidelity_phi, atol=(1 - self.precision) / 100):
+        elif (fidelity_new_phi > fidelity_phi) and not np.isclose(fidelity_new_phi, fidelity_phi,
+                                                                  atol=(1 - self.precision) / 100):
             print(
                 f"[{step_count[0]}/{step_count[1]}] [Fidelity = {fidelity_new_phi}] Omega geodesic gave a positive fidelity update for this step...                 ",
                 end="\r")
@@ -237,7 +238,7 @@ class Optimizer:
         new_phi_ham = Hamiltonian(self.full_basis, phi_ham.parameters + (epsilon * coeffs))
         return fidelity_phi, fidelity_new_phi, new_phi_ham, epsilon
 
-    def _new_phi_full(self, phi_ham, coeffs, step_size): #TODO could jitify this but probably not necessary
+    def _new_phi_full(self, phi_ham, coeffs, step_size):  # TODO could jitify this but probably not necessary
         delta_phi = step_size * coeffs
         new_phi_minus = Hamiltonian(self.full_basis, phi_ham.parameters - delta_phi)
         new_phi_plus = Hamiltonian(self.full_basis, phi_ham.parameters + delta_phi)
