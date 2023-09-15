@@ -8,8 +8,8 @@ invphi = (np.sqrt(5) - 1) / 2  # 1 / phi
 invphi2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
 
 
-def prepare_random_parameters(proj_indices, commuting_matrix):
-    randoms = 2 * np.random.rand(len(proj_indices)) - 1
+def prepare_random_parameters(proj_indices, commuting_matrix, spread=1.0):
+    randoms = (2 * np.random.rand(len(proj_indices)) - 1) * spread
     parameters = commuting_matrix @ np.multiply(proj_indices, randoms)
     return parameters
 
@@ -28,8 +28,6 @@ def commuting_ansatz(target_unitary, basis, projected_indices):
             h_mat += h_params[i] * sympy.Matrix(b)
 
     sols = sympy.solve(h_mat * target_ham.matrix - target_ham.matrix * h_mat)
-    h_mat_subbed = h_mat.subs(sols)
-    # h_params_free = list(h_mat_subbed.free_symbols).sort(key=str)
     indices = remove_solution_free_parameters(h_params, sols)
     mat = construct_commuting_ansatz_matrix(h_params, sols)
     return indices, mat
