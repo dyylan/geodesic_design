@@ -5,10 +5,10 @@ from src.configs import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set parameters')
-    parser.add_argument('--instance', default=1)
-    parser.add_argument('--gate', default='w2pz')
-    parser.add_argument('--steps', default=10000)
-    parser.add_argument('--commute', default=0)
+    parser.add_argument('--instance', default=3)
+    parser.add_argument('--gate', default='w4px')
+    parser.add_argument('--steps', default=1000)
+    parser.add_argument('--commute', default=1)
     args = parser.parse_args()
     max_steps = int(args.steps)
     seed = int(args.instance) * 2 ** 8
@@ -69,4 +69,5 @@ if __name__ == "__main__":
         print("Running optimization...")
         opt = optimize.Optimizer(config.unitary, full_basis, projection_basis, max_steps=max_steps, commute=commute)
         dat = data.OptimizationData(config, optimizers=[opt], load_data=True)
+
         dat.save_data()

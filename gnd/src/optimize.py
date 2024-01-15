@@ -107,7 +107,7 @@ class Optimizer:
                                             self.projected_indices]
         # Initialize variables
         if init_parameters is None:
-            self.init_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix)
+            self.init_parameters = prepare_random_parameters(self.free_indices, self.commuting_ansatz_matrix, spread=0.01)
         self.parameters = [self.init_parameters]
         self.fidelities = [Hamiltonian(full_basis, self.init_parameters).fidelity(target_unitary)]
         self.step_sizes = [0]
@@ -201,7 +201,7 @@ class Optimizer:
             # Use the Gram-Schmidt procedure to generate a perpendicular vector to the previous coefficients.
             proj_c = proj_c - (((proj_c @ coeffs) / (coeffs @ coeffs)) * coeffs)
 
-            fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_full(phi_ham, proj_c, step_size=1)
+            fidelity_phi, fidelity_new_phi, new_phi_ham, step_size = self._new_phi_full(phi_ham, proj_c, step_size=0.5)
 
         return new_phi_ham, fidelity_new_phi, step_size
 
